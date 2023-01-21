@@ -6,7 +6,7 @@ use winapi::shared::ntdef::NULL;
 use winapi::shared::minwindef::*;
 use winapi::shared::windef::*;
 use winapi::um::errhandlingapi::GetLastError;
-use winapi::um::winuser::{MSG, LPMSG, WH_KEYBOARD_LL};
+use winapi::um::winuser::{WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP, LPMSG, WH_KEYBOARD_LL};
 use winapi::um::winuser::{GetMessageA, TranslateMessage, DispatchMessageA, CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx};
 
 #[derive(Debug)]
@@ -36,11 +36,19 @@ pub unsafe extern "system" fn low_level_keyboard_procedure(
             }
         }
 
-        match wm_key_code {
-            WM_KEYDOWN => { process_key(KeyCode::Down); }
-            WM_KEYUP => { process_key(KeyCode::Up); }
-            WM_SYSKEYDOWN => { process_key(KeyCode::Down); }
-            WM_SYSKEYUP => { process_key(KeyCode::Up); }
+        match wm_key_code as u32 {
+            WM_KEYDOWN => { 
+                process_key(KeyCode::Down);
+            }
+            WM_KEYUP => {
+                process_key(KeyCode::Up);
+            }
+            WM_SYSKEYDOWN => {
+                process_key(KeyCode::Down);
+            }
+            WM_SYSKEYUP => {
+                process_key(KeyCode::Up);
+            }
             _ => unsafe {
                 // We don't recognize the key code. This should never happen, except something really bad is happening with the OS.
                 // TODO: hhk param should be registered hook during startup
