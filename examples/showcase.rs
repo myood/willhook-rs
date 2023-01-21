@@ -70,74 +70,113 @@ pub unsafe extern "system" fn low_level_keyboard_procedure(
         }
     }
 
-    use std::sync::atomic::AtomicPtr;
+    use std::sync::Arc;
+    use std::sync::Mutex;
+    use std::sync::atomic::AtomicBool;
     use std::sync::atomic::Ordering;
-    struct Hook {
-        raw_handle: AtomicPtr<HHOOK>,
-    }
 
+    #[derive(Clone)]
+    struct Hook {
+        raw_handle: Arc<Mutex<UnsafeHook>>,
+    }
 
     impl Hook {
         fn new() -> Hook {
             Hook {
-                raw_handle: AtomicPtr::new(null_mut() as *mut HHOOK),
+                raw_handle: Arc::new(Mutex::new(UnsafeHook::new())),
+            }
+        }
+
+        fn set(&mut self, v: HHOOK) {
+            if let Ok(mut inner) = self.raw_handle.lock() {
+                inner.set(v);
+            }
+        }
+
+        fn get(&self) -> HHOOK {
+            if let Ok(inner) = self.raw_handle.lock() {
+                return (*inner).get() as HHOOK
+            }
+            return NULL as HHOOK
+        }
+    }
+
+    unsafe impl Send for Hook {}
+    unsafe impl Sync for Hook {}
+
+    struct UnsafeHook {
+        raw_handle: HHOOK
+    }
+
+    impl UnsafeHook {
+        fn new() -> UnsafeHook {
+            UnsafeHook { raw_handle: NULL as HHOOK }
+        }
+
+        fn set(&mut self, v: HHOOK) {
+            self.raw_handle = v;
+        }
+
+        fn get(&self) -> HHOOK {
+            return self.raw_handle as HHOOK
+        }
+    }
+
+    unsafe impl Send for UnsafeHook {}
+    unsafe impl Sync for UnsafeHook {}
+
+
+fn main() {
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    let mut hook = Hook::new();
+    let h = hook.clone();
+    ctrlc::set_handler(move || {
+        println!("received Ctrl+C!");
+        r.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl-C handler");
+
+    let _ = Droppable{name: "main"};
+
+    let hook_thread = std::thread::spawn(move || {
+        let hmod = NULL as HINSTANCE;
+        let thread_id = 0 as DWORD;
+        let hhook;
+        unsafe {
+            hhook = SetWindowsHookExA(WH_KEYBOARD_LL, Some(low_level_keyboard_procedure), hmod, thread_id);
+            println!("HHOOK: {:?}, GetLastError: {}", hhook, GetLastError());
+        }
+
+        if hhook as usize != 0usize {
+            hook.set(hhook);
+        }
+
+        // This call keeps the hook alive, it does not return. Apparently, takes control over this thread.
+        let mut msg = std::mem::MaybeUninit::uninit();
+        unsafe {
+            GetMessageA(msg.as_mut_ptr() as LPMSG, NULL as HWND, NULL as UINT, NULL as UINT);// {
+        }
+    });
+
+    while !hook_thread.is_finished() && running.load(Ordering::SeqCst) {
+        std::thread::yield_now();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    };
+    let handle: HHOOK = h.get();
+    unsafe {
+        println!("HHOOK: {:?}, GetLastError: {}", handle as u32, GetLastError());
+    }
+    if handle != NULL as HHOOK {
+        println!("OK! Destroying the hook...");
+        unsafe {
+            if UnhookWindowsHookEx(handle) != 0 {
+                println!("OK! All cleaned up!");
             }
         }
     }
 
-fn main() {
-    unsafe {
-        use std::sync::atomic::{AtomicBool};
-        use std::sync::Arc;
-        let running = Arc::new(AtomicBool::new(true));
-        let r = running.clone();
-
-        let hook = Arc::new(Hook::new());
-        let h = hook.clone();
-        ctrlc::set_handler(move || {
-            println!("received Ctrl+C!");
-            r.store(false, Ordering::SeqCst);
-        })
-        .expect("Error setting Ctrl-C handler");
-
-        let _ = Droppable{name: "main"};
-
-        let hook_thread = std::thread::spawn(move || {
-            let hmod = NULL as HINSTANCE;
-            let thread_id = 0 as DWORD;
-            let hhook = SetWindowsHookExA(WH_KEYBOARD_LL, Some(low_level_keyboard_procedure), hmod, thread_id);
-            println!("HHOOK: {:?}, GetLastError: {}", hhook, GetLastError());
-
-            if hhook as usize != 0usize {
-                h.raw_handle.store(hhook as *mut HHOOK, Ordering::SeqCst);
-            }
-    
-            // This call keeps the hook alive, it does not return. Apparently, takes control over this thread.
-            let mut msg = std::mem::MaybeUninit::uninit();
-            GetMessageA(msg.as_mut_ptr() as LPMSG, NULL as HWND, NULL as UINT, NULL as UINT);// {
-        });
-
-            // if hhook != NULL as HHOOK {
-            //     println!("OK! Destroying the hook...");
-            //     if UnhookWindowsHookEx(hhook) != 0 {
-            //         println!("OK! All cleaned up!");
-            //     }
-            // }
-        // });
-
-        while !hook_thread.is_finished() && running.load(Ordering::SeqCst) {
-            std::thread::yield_now();
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        };
-
-                // if hhook != NULL as HHOOK {
-        //     println!("OK! Destroying the hook...");
-        //     if UnhookWindowsHookEx(hhook) != 0 {
-        //         println!("OK! All cleaned up!");
-        //     }
-        // }
-    // });
-
-        println!("Outside loop");
-    }
+    println!("Outside loop");
 }
+
