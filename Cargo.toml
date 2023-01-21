@@ -1,0 +1,11 @@
+[package]
+name = "rust-winapi-capture-keyboard-and-mouse-with-low-level-hooks"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser", "hidusage", "errhandlingapi", "libloaderapi"] }
+
+[dependencies]
