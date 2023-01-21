@@ -66,12 +66,26 @@ fn main() {
         let hhook = SetWindowsHookExA(WH_KEYBOARD_LL, Some(low_level_keyboard_procedure), hmod, thread_id);
         println!("HHOOK: {:?}, GetLastError: {}", hhook, GetLastError());
 
-        // This while loop keeps the hook
-        let mut msg = std::mem::MaybeUninit::uninit();
-        while FALSE == GetMessageA(msg.as_mut_ptr() as LPMSG, NULL as HWND, NULL as UINT, NULL as UINT) {
-            TranslateMessage(msg.as_ptr());
-            DispatchMessageA(msg.as_ptr());
-        }
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::Arc;
+
+        let running = Arc::new(AtomicBool::new(true));
+        let r = running.clone();
+    
+        ctrlc::set_handler(move || {
+            r.store(false, Ordering::SeqCst);
+        }).expect("Error setting Ctrl-C handler");
+    
+        println!("Waiting for Ctrl-C...");
+        while running.load(Ordering::SeqCst) {}
+        println!("Got it! Exiting...");
+
+        // // This while loop keeps the hook
+        // let mut msg = std::mem::MaybeUninit::uninit();
+        // while FALSE == GetMessageA(msg.as_mut_ptr() as LPMSG, NULL as HWND, NULL as UINT, NULL as UINT) {
+        //     TranslateMessage(msg.as_ptr());
+        //     DispatchMessageA(msg.as_ptr());
+        // }
 
         if hhook != NULL as HHOOK {
             println!("OK! Destroying the hook...");

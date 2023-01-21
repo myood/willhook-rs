@@ -9,3 +9,7 @@ edition = "2021"
 winapi = { version = "0.3", features = ["winuser", "hidusage", "errhandlingapi", "libloaderapi"] }
 
 [dependencies]
+ctrlc = "3.2.0"
+
+[[example]]
+name = "showcase"
