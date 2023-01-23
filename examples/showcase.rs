@@ -15,14 +15,15 @@ use std::sync::Arc;
 use std::sync::Weak;
 
 struct HookChannels {
-    sender: Mutex<Sender<KeyCode>>,
+    keyboard_sender: Mutex<Sender<KeyCode>>,
+    mouse_sender: Mutex<Sender<KeyCode>>,
     receiver: Mutex<Receiver<KeyCode>>,
 }
 
 impl HookChannels {
     fn new() -> HookChannels {
         let (s, r) = channel();
-        HookChannels { sender: Mutex::new(s), receiver: Mutex::new(r) }
+        HookChannels { keyboard_sender: Mutex::new(s.clone()), mouse_sender: Mutex::new(s.clone()), receiver: Mutex::new(r) }
     }
 }
 
@@ -133,7 +134,7 @@ enum KeyCode {
 }
 
 fn send_key(kc: KeyCode) {
-    let sender = &GLOBAL_CHANNEL.sender.lock().unwrap();
+    let sender = &GLOBAL_CHANNEL.keyboard_sender.lock().unwrap();
     sender.send(kc);
 }
 
@@ -265,12 +266,6 @@ pub unsafe extern "system" fn low_level_keyboard_procedure(
 
     unsafe impl Send for UnsafeHook {}
     unsafe impl Sync for UnsafeHook {}
-
-    fn black_box<T>(dummy: T) -> T {
-        unsafe {
-            std::ptr::read_volatile(&dummy)
-        }
-    }
 
 fn main() {
     let running = Arc::new(AtomicBool::new(true));
