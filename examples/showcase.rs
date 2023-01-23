@@ -6,7 +6,8 @@ use std::thread::JoinHandle;
 use winapi::shared::ntdef::NULL;
 use winapi::shared::minwindef::*;
 use winapi::shared::windef::*;
-use winapi::um::winuser::{WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP, LPMSG, WH_KEYBOARD_LL};
+use winapi::um::winuser::HOOKPROC;
+use winapi::um::winuser::{WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP, LPMSG, WH_KEYBOARD_LL, WH_MOUSE_LL};
 use winapi::um::winuser::{GetMessageA, CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx};
 use once_cell::sync::Lazy;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -74,33 +75,35 @@ pub unsafe extern "system" fn low_level_keyboard_procedure(
     use std::sync::atomic::AtomicBool;
     use std::sync::atomic::Ordering;
 
-    struct KeyCodeChannel {
-        hook: Hook
-    }
-
     #[derive(Clone)]
     struct Hook {
         hook_handle: Arc<Mutex<UnsafeHook>>,
-        thread_handle: Arc<Mutex<JoinHandle<()>>>,
+        _thread_handle: Arc<Mutex<JoinHandle<()>>>,
     }
 
     impl Drop for Hook {
         fn drop(&mut self) {
-            if self.get_raw_handle() == NULL as HHOOK {
+            let winapi_handle: HHOOK = if let Ok(inner) = self.hook_handle.lock() {
+                (*inner).get() as HHOOK
+            } else {
+                NULL as HHOOK
+            };
+            
+            if winapi_handle == NULL as HHOOK {
                 return
             }
-            unsafe { UnhookWindowsHookEx(self.get_raw_handle()); }
+            unsafe { UnhookWindowsHookEx(winapi_handle); }
         }
     }
 
     impl Hook {
-        fn new() -> Hook {
+        fn new(hook_id: INT, handler: HOOKPROC) -> Hook {
             let unsafe_hook = Arc::new(Mutex::new(UnsafeHook::new()));
             let deferred_handle = unsafe_hook.clone();
             let deferred = Arc::new(Mutex::new(std::thread::spawn(move || {
                 let hhook;
                 unsafe {
-                    hhook = SetWindowsHookExA(WH_KEYBOARD_LL, Some(low_level_keyboard_procedure), NULL as HINSTANCE, NULL as DWORD);
+                    hhook = SetWindowsHookExA(hook_id, handler, NULL as HINSTANCE, NULL as DWORD);
                 }
         
                 if hhook as usize != 0usize {
@@ -118,15 +121,8 @@ pub unsafe extern "system" fn low_level_keyboard_procedure(
 
             Hook {
                 hook_handle: unsafe_hook,
-                thread_handle: deferred,
+                _thread_handle: deferred,
             }
-        }
-
-        fn get_raw_handle(&self) -> HHOOK {
-            if let Ok(inner) = self.hook_handle.lock() {
-                return (*inner).get() as HHOOK
-            }
-            return NULL as HHOOK
         }
     }
 
@@ -156,7 +152,9 @@ fn main() {
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
-    let _hook = Hook::new();
+    let _hook = Hook::new(WH_KEYBOARD_LL, Some(low_level_keyboard_procedure));
+
+    let _hook2 = Hook::new(WH_MOUSE_LL, Some(low_level_keyboard_procedure));
 
     ctrlc::set_handler(move || {
         println!("received Ctrl+C!");
