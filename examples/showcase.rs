@@ -11,7 +11,19 @@ use winapi::um::winuser::{GetMessageA, CallNextHookEx, SetWindowsHookExA, Unhook
 use once_cell::sync::Lazy;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-static GLOBAL_CHANNEL: Lazy<Mutex<(Sender<KeyCode>, Receiver<KeyCode>)>> = Lazy::new(|| { Mutex::new(channel()) });
+struct HookChannels {
+    sender: Mutex<Sender<KeyCode>>,
+    receiver: Mutex<Receiver<KeyCode>>,
+}
+
+impl HookChannels {
+    fn new() -> HookChannels {
+        let (s, r) = channel();
+        HookChannels { sender: Mutex::new(s), receiver: Mutex::new(r) }
+    }
+}
+
+static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| { HookChannels::new() });
 
 #[derive(Debug)]
 enum KeyCode {
@@ -20,7 +32,7 @@ enum KeyCode {
 }
 
 fn send_key(kc: KeyCode) {
-    let sender = GLOBAL_CHANNEL.lock().unwrap().0.clone();
+    let sender = &GLOBAL_CHANNEL.sender.lock().unwrap();
     sender.send(kc);
 }
 
@@ -153,8 +165,8 @@ fn main() {
     .expect("Error setting Ctrl-C handler");
 
     while running.load(Ordering::SeqCst) {
-        if let Ok(guard) = GLOBAL_CHANNEL.lock() {
-            let keys_receiver = &(*guard).1;
+        if let Ok(guard) = GLOBAL_CHANNEL.receiver.lock() {
+            let keys_receiver = &(*guard);
             while let Ok(kc) = keys_receiver.try_recv() {
                 println!("Key event: {:?}", kc);
             }
