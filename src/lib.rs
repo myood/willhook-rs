@@ -1,27 +1,7 @@
 
 pub mod hook {
-    use std::ptr::null_mut;
-    use std::thread::JoinHandle;
-
-    use once_cell::sync::Lazy;
-    use std::sync::mpsc::{channel, Receiver, Sender};
+    use crate::hook::inner::{InnerHook, setup_keyboard_hook, setup_mouse_hook};
     use std::sync::Arc;
-    use std::sync::Weak;
-    use std::sync::Mutex;
-    use winapi::shared::minwindef::*;
-    use winapi::shared::ntdef::NULL;
-    use winapi::shared::windef::*;
-    use winapi::um::winuser::HOOKPROC;
-    use winapi::um::winuser::{
-        CallNextHookEx, GetMessageA, SetWindowsHookExA, UnhookWindowsHookEx,
-    };
-    use winapi::um::winuser::{
-        LPMSG, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
-    };
-
-    use crate::hook::inner::InnerHook;
-
-    use self::inner::{setup_keyboard_hook, setup_mouse_hook};
 
     pub struct Hook {
         keyboard_hook: Option<Arc<InnerHook>>,
@@ -78,7 +58,7 @@ pub mod hook {
         Up,
     }
 
-    pub mod inner {
+    pub(crate) mod inner {
         use crate::hook::KeyCode;
 
         use std::ptr::null_mut;
@@ -98,6 +78,11 @@ pub mod hook {
         use winapi::um::winuser::{
             LPMSG, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
         };
+
+        static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| HookChannels::new());
+        static GLOBAL_KEYBOARD_HOOK: Mutex<Option<Weak<InnerHook>>> = Mutex::new(None);
+        static GLOBAL_MOUSE_HOOK: Mutex<Option<Weak<InnerHook>>> = Mutex::new(None);
+
         struct HookChannels {
             keyboard_sender: Mutex<Sender<KeyCode>>,
             mouse_sender: Mutex<Sender<KeyCode>>,
@@ -109,7 +94,7 @@ pub mod hook {
             if kb_hook_guard.is_some() {
                 let weak_kb_hook = kb_hook_guard.as_mut();
                 if let Some(weak_kb_hook) = weak_kb_hook {
-                    if let Some(arc) = weak_kb_hook.upgrade() {
+                    if weak_kb_hook.upgrade().is_some() {
                         return true;
                     }
                 }
@@ -172,9 +157,7 @@ pub mod hook {
             }
         }
 
-        static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| HookChannels::new());
-        static GLOBAL_KEYBOARD_HOOK: Mutex<Option<Weak<InnerHook>>> = Mutex::new(None);
-        static GLOBAL_MOUSE_HOOK: Mutex<Option<Weak<InnerHook>>> = Mutex::new(None);
+
 
 
     fn send_key(kc: KeyCode) {
