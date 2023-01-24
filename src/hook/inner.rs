@@ -1,3 +1,6 @@
+pub(super) mod raw;
+
+use crate::hook::inner::raw::RawHook;
 use crate::hook::KeyCode;
 
 use std::ptr::null_mut;
@@ -15,6 +18,9 @@ use winapi::um::winuser::{CallNextHookEx, GetMessageA, SetWindowsHookExA, Unhook
 use winapi::um::winuser::{
     LPMSG, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
+
+use std::sync::Condvar;
+use std::sync::Mutex;
 
 static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| HookChannels::new());
 static GLOBAL_KEYBOARD_HOOK: Mutex<Option<Weak<InnerHook>>> = Mutex::new(None);
@@ -99,7 +105,7 @@ fn send_key(kc: KeyCode) {
     sender.send(kc);
 }
 
-pub unsafe extern "system" fn low_level_keyboard_procedure(
+unsafe extern "system" fn low_level_keyboard_procedure(
     code: INT,
     wm_key_code: WPARAM,
     win_hook_struct: LPARAM,
@@ -107,7 +113,7 @@ pub unsafe extern "system" fn low_level_keyboard_procedure(
     // If code is less than zero, then the hook procedure
     // must pass the message to the CallNextHookEx function
     // without further processing and should return the value returned by CallNextHookEx.
-    if code < 0 {
+    if code < 0 || !is_hook_present(&GLOBAL_KEYBOARD_HOOK) {
         unsafe {
             // TODO: hhk param should be registered hook during startup
             return CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct);
@@ -132,14 +138,11 @@ pub unsafe extern "system" fn low_level_keyboard_procedure(
     CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct)
 }
 
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
-use std::sync::Condvar;
-use std::sync::Mutex;
+
 
 #[derive(Clone)]
 pub struct InnerHook {
-    hook_handle: Arc<Mutex<UnsafeHook>>,
+    hook_handle: Arc<Mutex<RawHook>>,
     _thread_handle: Arc<Mutex<JoinHandle<()>>>,
 }
 
@@ -162,13 +165,13 @@ impl Drop for InnerHook {
 
 impl InnerHook {
     pub fn new(hook_id: INT, handler: HOOKPROC) -> InnerHook {
-        let unsafe_hook = Arc::new(Mutex::new(UnsafeHook::new()));
-        let deferred_handle = unsafe_hook.clone();
+        let raw_hook = Arc::new(Mutex::new(RawHook::new()));
+        let deferred_handle = raw_hook.clone();
 
         let is_started = Arc::new((Mutex::new(false), Condvar::new()));
         let set_started = is_started.clone();
 
-        let deferred = Arc::new(Mutex::new(std::thread::spawn(move || {
+        let install_hook = Arc::new(Mutex::new(std::thread::spawn(move || {
             let hhook;
             unsafe {
                 hhook = SetWindowsHookExA(hook_id, handler, NULL as HINSTANCE, NULL as DWORD);
@@ -196,7 +199,7 @@ impl InnerHook {
                     NULL as HWND,
                     NULL as UINT,
                     NULL as UINT,
-                ); // {
+                );
             }
         })));
 
@@ -210,8 +213,8 @@ impl InnerHook {
         }
 
         InnerHook {
-            hook_handle: unsafe_hook,
-            _thread_handle: deferred,
+            hook_handle: raw_hook,
+            _thread_handle: install_hook,
         }
     }
 
@@ -224,26 +227,3 @@ impl InnerHook {
         }
     }
 }
-
-struct UnsafeHook {
-    raw_handle: HHOOK,
-}
-
-impl UnsafeHook {
-    fn new() -> UnsafeHook {
-        UnsafeHook {
-            raw_handle: NULL as HHOOK,
-        }
-    }
-
-    fn get(&self) -> HHOOK {
-        return self.raw_handle as HHOOK;
-    }
-
-    fn set(&mut self, v: HHOOK) {
-        self.raw_handle = v;
-    }
-}
-
-unsafe impl Send for UnsafeHook {}
-unsafe impl Sync for UnsafeHook {}
