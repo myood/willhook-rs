@@ -1,5 +1,5 @@
 [package]
-name = "rust-winapi-capture-keyboard-and-mouse-with-low-level-hooks"
+name = "monke"
 version = "0.1.0"
 edition = "2021"
 
