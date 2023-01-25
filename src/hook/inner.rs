@@ -97,7 +97,7 @@ fn setup_hook(
 
 
 fn send_key(kc: KeyCode) {
-    GLOBAL_CHANNEL.send_key_code(kc);
+    let _ignore_result = GLOBAL_CHANNEL.send_key_code(kc);
 }
 
 unsafe extern "system" fn low_level_keyboard_procedure(

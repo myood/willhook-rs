@@ -19,8 +19,8 @@ use std::sync::Arc;
 /// # }
 /// ```
 pub struct Hook {
-    keyboard_hook: Option<Arc<InnerHook>>,
-    mouse_hook: Option<Arc<InnerHook>>,
+    _keyboard_hook: Option<Arc<InnerHook>>,
+    _mouse_hook: Option<Arc<InnerHook>>,
 }
 
 impl Hook {
@@ -171,8 +171,8 @@ impl HookBuilder {
             None
         } else {
             Some(Hook {
-                keyboard_hook: kb_hook,
-                mouse_hook: m_hook,
+                _keyboard_hook: kb_hook,
+                _mouse_hook: m_hook,
             })
         }
     }
