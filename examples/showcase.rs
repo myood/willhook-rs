@@ -11,12 +11,192 @@ fn main() {
         let h = HookBuilder::new().with_keyboard().build();
         assert!(h.is_some());
         let h = h.unwrap();
+
         let h2 = HookBuilder::new().with_mouse().build();
         assert!(h2.is_none());
         let h3 = HookBuilder::new().with_keyboard().with_mouse().build();
         assert!(h3.is_none());
     }
 
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
+
+    {
+        let h = HookBuilder::new().with_keyboard().build();
+        assert!(h.is_some());
+    }
     let h = HookBuilder::new().with_keyboard().build().unwrap();
 
     ctrlc::set_handler(move || {
@@ -32,4 +212,9 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(100));
     };
 }
+
+
+// TESTS:
+// create kb hook, then mouse hook, then create both hooks
+// check if all threads are closed (how??)
 

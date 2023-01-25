@@ -25,9 +25,8 @@ pub struct Hook {
 
 impl Hook {
     /// Tries to receive an event from the low-level hook(s) running in the background thread(s).
-    /// If there are no events at the moment, will return Err(std::sync::mpsc::Empty)
+    /// If there are no events at the moment, will return Err(std::sync::mpsc::Empty):
     /// 
-    /// Example
     /// ```rust
     /// # fn main() {
     /// # use monke::hook::HookBuilder;
@@ -40,9 +39,9 @@ impl Hook {
     /// # }
     /// ```
     /// 
-    /// It should be treated as a foundation for more complex processing. 
+    /// Hook::try_recv() should be treated as a foundation for more complex processing. 
     /// For example if one would be intereted in only unique key presses
-    /// with timestamps (regardless how long the key press lasts):
+    /// with timestamps (regardless of how long the key press lasts):
     /// 
     /// ``` rust
     /// # fn main() {
@@ -65,6 +64,66 @@ impl Hook {
     }
 }
 
+/// The only way to build a hook is to use HookBuilder.
+/// It is possible to choose what types of hooks are active.
+/// Currently only "mouse" and "keyboard" hooks are supported (due to Windows API restrictions).
+/// 
+/// # Build hook for both mouse and keyboard:
+/// ```rust
+/// use monke::hook::HookBuilder;
+/// fn main() {
+///     let hook = HookBuilder::new()
+///                 .with_mouse()
+///                 .with_keyboard()
+///                 .build();
+///     assert!(hook.is_some());
+/// }
+/// ```
+/// 
+/// # Limitations
+/// 
+/// At least one hook type has to be specified, otherwise build will fail:
+/// ```rust
+/// # fn main() {
+/// # use monke::hook::HookBuilder;
+/// let bad_hook = HookBuilder::new().build();
+/// assert!(bad_hook.is_none());
+/// # }
+/// ```
+/// There can be only one hook at the moment, even if we try to create different type:
+/// 
+/// ```rust
+/// # fn main() {
+/// # use monke::hook::HookBuilder;
+/// let hook = HookBuilder::new()
+///             .with_mouse()
+///             .build();
+/// 
+/// assert!(hook.is_some());
+/// // Building second hook while the first one is still in scope will fail.
+/// // Even if that second hook is keyboard hook:
+/// let another_hook = HookBuilder::new().with_keyboard().build();
+/// assert!(another_hook.is_none());
+/// # }
+/// ```
+/// 
+/// Only after the old hook is dropped, the new one can be created:
+/// 
+/// ```rust
+/// # fn main() {
+/// # use monke::hook::HookBuilder;
+/// let hook = HookBuilder::new()
+///             .with_mouse()
+///             .build();
+/// 
+/// assert!(hook.is_some());
+/// // It could go out of scope as well, but let's drop it explicitly:
+/// drop(hook);
+/// // Since there is no "active" hook at the moment, now we can create another:
+/// let another_hook = HookBuilder::new().with_keyboard().build();
+/// assert!(another_hook.is_some());
+/// # }
+/// ```
 pub struct HookBuilder {
     mouse: bool,
     keyboard: bool,
@@ -78,16 +137,20 @@ impl HookBuilder {
         }
     }
 
+    /// Instructs builder to spawn a new mouse hook in background thread on HookBuilder::build().
     pub fn with_mouse(mut self) -> Self {
         self.mouse = true;
         self
     }
 
+    /// Instructs builder to spawn a new keyboard hook in background thread on HookBuilder::build().
     pub fn with_keyboard(mut self) -> Self {
         self.keyboard = true;
         self
     }
 
+    /// Builds the requested hooks and returns common handle for them.
+    /// If any hooks are active, then the build fails.
     pub fn build(self) -> Option<Hook> {
         if !self.keyboard && !self.mouse {
             return None
