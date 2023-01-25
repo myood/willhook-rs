@@ -133,9 +133,6 @@ unsafe extern "system" fn low_level_keyboard_procedure(
     CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct)
 }
 
-
-
-#[derive(Clone)]
 pub struct InnerHook {
     hook_handle: Arc<Mutex<RawHook>>,
     thread_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
