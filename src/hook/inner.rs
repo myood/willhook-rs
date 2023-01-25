@@ -143,32 +143,35 @@ impl Drop for InnerHook {
         let (winapi_handle, thread_id) = if let Ok(inner) = self.hook_handle.lock() {
             ((*inner).raw_handle as HHOOK, (*inner).thread_id)
         } else {
-            (NULL as HHOOK, NULL as DWORD)
+            // The hook thread panicked, apparently.
+            return;
         };
 
-        if winapi_handle == NULL as HHOOK {
-            return;
-        }
-        unsafe {
-            UnhookWindowsHookEx(winapi_handle);
-        }
-
-        if thread_id == NULL as DWORD {
+        if winapi_handle == NULL as HHOOK || thread_id == NULL as DWORD {
+            // This handle is not associated with the valid raw hook.
             return;
         }
 
-        let res;
         unsafe {
-            // We don't really care about the result, because there's not much we can do about it.
-            res = PostThreadMessageA(thread_id, WM_QUIT, NULL as WPARAM, NULL as LPARAM);
+            // Non-null value indicates success. Something wen't wrong while unhooking.
+            // This is "theoretical" scenario. Don't kill the hook thread, maybe OS won't blow up.
+            if 0 == UnhookWindowsHookEx(winapi_handle) {
+                return;
+            }
+
+            // Again as long as OS is keeping it's side of the deal, this should never happen.
+            // But just in case... we won't try to join with the thread, if anything bad DOES happen.
+            if 0 == PostThreadMessageA(thread_id, WM_QUIT, NULL as WPARAM, NULL as LPARAM) {
+                return;
+            }
         }
 
-        // We successfully sent a message to the background thread, so let's join with it.
-        if res != NULL as i32 {
-            // Below ridiculous chain of calls is "necessary" to move a value out of a mutex.
-            // See : https://stackoverflow.com/questions/30573188/cannot-move-data-out-of-a-mutex
-            if self.thread_handle.lock().unwrap().take().unwrap().join().is_err() {
-                panic!("Failed to join with the thread :(");
+        
+        // Below ridiculous chain of calls is "necessary" to move a value out of a mutex.
+        // See : https://stackoverflow.com/questions/30573188/cannot-move-data-out-of-a-mutex
+        if let Ok(mut lock) = self.thread_handle.lock() {
+            if let Some(jh) = lock.take() {
+                let _ignore_error = jh.join();
             }
         }
     }
@@ -176,18 +179,26 @@ impl Drop for InnerHook {
 
 impl InnerHook {
     pub fn new(hook_id: INT, handler: HOOKPROC) -> InnerHook {
+        // The raw hook data that will be set by the background thread
         let raw_hook = Arc::new(Mutex::new(RawHook::new()));
         let deferred_handle = raw_hook.clone();
 
+        // Used to notify the "owner" of the hook that thread started
         let is_started = Arc::new((Mutex::new(false), Condvar::new()));
         let set_started = is_started.clone();
 
+        // Start a new thread and in that thread:
+        // - install the hook
+        // - set the raw hook data
+        // - notify the owner thread that raw hook data are available
+        // - wait for the message to quit
         let install_hook = Arc::new(Mutex::new(Some(std::thread::spawn(move || {
             let hhook;
             unsafe {
                 hhook = SetWindowsHookExA(hook_id, handler, NULL as HINSTANCE, NULL as DWORD);
             }
 
+            // Set the HHOOK and ThreadID so that the "owner" thread can later kill hook and join with it
             if hhook as usize != 0usize {
                 if let Ok(mut exclusive) = deferred_handle.lock() {
                     exclusive.raw_handle = hhook;
@@ -195,8 +206,8 @@ impl InnerHook {
                 }
             }
 
+            // Notify the "owner" thread that the hook is started
             {
-                // Notify that the hook is started
                 let (start_lock, start_cvar) = &*set_started;
                 let mut started = start_lock.lock().unwrap();
                 *started = true;
@@ -220,7 +231,7 @@ impl InnerHook {
         }))));
 
         {
-            // Wait for the hook to start
+            // Wait for the hook to start and set the value.
             let (start_lock, start_cvar) = &*is_started;
             let mut started = start_lock.lock().unwrap();
             while !*started {
@@ -238,7 +249,8 @@ impl InnerHook {
         if is_any_hook_present() {
             GLOBAL_CHANNEL.try_recv()
         } else {
-            // This actually should never happen
+            // This actually should never happen :-)
+            // One can't create a hook that is invalid (builder returns Option<Hook>)
             Err(std::sync::mpsc::TryRecvError::Disconnected)
         }
     }
