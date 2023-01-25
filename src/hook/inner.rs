@@ -205,6 +205,10 @@ impl InnerHook {
     }
 
     pub fn try_recv() -> Result<KeyCode, std::sync::mpsc::TryRecvError> {
-        GLOBAL_CHANNEL.try_recv()
+        if !is_hook_present(&GLOBAL_MOUSE_HOOK) && !is_hook_present(&GLOBAL_KEYBOARD_HOOK) {
+            Err(std::sync::mpsc::TryRecvError::Disconnected)
+        } else {
+            GLOBAL_CHANNEL.try_recv()
+        }
     }
 }
