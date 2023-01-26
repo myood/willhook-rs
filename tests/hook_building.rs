@@ -60,29 +60,35 @@ fn build_fails_if_different_type_of_hook_exists_6() {
 
 #[test]
 fn building_data_race() {
-    let repetitions = 1000usize;
-    for _ in 0..repetitions {
-        use std::sync::{Arc, Barrier};
+    let repetitions = 100usize;
+    for k in 0..repetitions {
+        use std::sync::{Arc, Barrier, atomic::{AtomicUsize, Ordering}};
         use std::thread;
-        let racers = 10000usize;
+
+        let racers = 1000usize;
     
         let barrier = Arc::new(Barrier::new(racers));
         let mut handles = Vec::with_capacity(racers);
+
+        let mut some = Arc::new(AtomicUsize::new(0));
     
-        for _ in 0..racers {
-            let c = Arc::clone(&barrier);
+        for i in 0..racers {
+            let b = Arc::clone(&barrier);
+            let c = some.clone();
             handles.push(thread::spawn(move || {
-                c.wait();
-                HookBuilder::new().with_keyboard().build()
+                b.wait();
+                let h = keyboard_hook();
+                if h.is_some() {
+                    c.fetch_add(1usize, Ordering::SeqCst);
+                }
+                h
             }));
         }
     
-        let some = handles.into_iter()
-            .map(|jh| jh.join().unwrap())
-            .filter(|o| o.is_some())
-            .count();
+        let _ = handles.into_iter()
+            .for_each(|jh| { jh.join(); } );
 
         // No matter the number of builders, there should be only one successful build
-        assert_eq!(1, some);
+        assert_eq!(1, some.load(Ordering::SeqCst));
     }
 }

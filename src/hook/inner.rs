@@ -9,7 +9,7 @@ use crate::hook::{
 use std::{
     ptr::null_mut,
     thread::JoinHandle,
-    sync::{Arc, Weak, Condvar, Mutex}
+    sync::{Arc, Condvar, Mutex}
 };
 
 use once_cell::sync::Lazy;
@@ -29,72 +29,32 @@ use winapi::um::{
     }
 };
 
-pub fn setup_mouse_hook() -> Option<Arc<InnerHook>> {
-    if is_any_hook_present() {
-        None
-    } else {
-        Some(setup_hook(
-            &GLOBAL_MOUSE_HOOK,
-            WH_MOUSE_LL,
-            Some(low_level_keyboard_procedure),
-        ))
-    }
+pub struct GlobalHooks {
+    keyboard: Option<InnerHook>,
+    mouse: Option<InnerHook>,
 }
 
-pub fn setup_keyboard_hook() -> Option<Arc<InnerHook>> {
-    if is_any_hook_present() {
-        None
-    } else {
-        Some(setup_hook(
-            &GLOBAL_KEYBOARD_HOOK,
-            WH_KEYBOARD_LL,
-            Some(low_level_keyboard_procedure),
-        ))
+impl GlobalHooks {
+    pub fn is_any_hook_present(&self) -> bool {
+        self.keyboard.is_some() || self.mouse.is_some()
+    }
+
+    pub fn setup_mouse_hook(&mut self) {
+        self.mouse = Some(InnerHook::new(WH_MOUSE_LL, Some(low_level_keyboard_procedure)));
+    }
+
+    pub fn setup_keyboard_hook(&mut self) {
+        self.keyboard = Some(InnerHook::new(WH_KEYBOARD_LL, Some(low_level_keyboard_procedure)));
+    }
+
+    pub fn drop_hooks(&mut self) {
+        self.keyboard = None;
+        self.mouse = None;
     }
 }
 
 static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| HookChannels::new());
-static GLOBAL_KEYBOARD_HOOK: Mutex<Option<Weak<InnerHook>>> = Mutex::new(None);
-static GLOBAL_MOUSE_HOOK: Mutex<Option<Weak<InnerHook>>> = Mutex::new(None);
-
-fn is_any_hook_present() -> bool {
-    is_hook_present(&GLOBAL_MOUSE_HOOK) || is_hook_present(&GLOBAL_KEYBOARD_HOOK)
-}
-
-fn is_hook_present(global: &Mutex<Option<Weak<InnerHook>>>) -> bool {
-    let mut kb_hook_guard = global.lock().unwrap();
-    if kb_hook_guard.is_some() {
-        let weak_kb_hook = kb_hook_guard.as_mut();
-        if let Some(weak_kb_hook) = weak_kb_hook {
-            if weak_kb_hook.upgrade().is_some() {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-fn setup_hook(
-    global: &Mutex<Option<Weak<InnerHook>>>,
-    hook_id: INT,
-    handler: HOOKPROC,
-) -> Arc<InnerHook> {
-    let mut kb_hook_guard = global.lock().unwrap();
-    if kb_hook_guard.is_some() {
-        let weak_kb_hook = kb_hook_guard.as_mut();
-        if let Some(weak_kb_hook) = weak_kb_hook {
-            if let Some(arc) = weak_kb_hook.upgrade() {
-                return arc;
-            }
-        }
-    }
-
-    let hook = Arc::new(InnerHook::new(hook_id, handler));
-    *kb_hook_guard = Some(Arc::downgrade(&hook));
-    hook
-}
-
+pub(super) static GLOBAL_HOOK: Mutex<GlobalHooks> = Mutex::new(GlobalHooks{keyboard: None, mouse: None});
 
 fn send_key(kc: KeyCode) {
     let _ignore_result = GLOBAL_CHANNEL.send_key_code(kc);
@@ -108,7 +68,7 @@ unsafe extern "system" fn low_level_keyboard_procedure(
     // If code is less than zero, then the hook procedure
     // must pass the message to the CallNextHookEx function
     // without further processing and should return the value returned by CallNextHookEx.
-    if code < 0 || !is_hook_present(&GLOBAL_KEYBOARD_HOOK) {
+    if code < 0 {
         unsafe {
             // TODO: hhk param should be registered hook during startup
             return CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct);
@@ -246,12 +206,6 @@ impl InnerHook {
     }
 
     pub fn try_recv() -> Result<KeyCode, std::sync::mpsc::TryRecvError> {
-        if is_any_hook_present() {
-            GLOBAL_CHANNEL.try_recv()
-        } else {
-            // This actually should never happen :-)
-            // One can't create a hook that is invalid (builder returns Option<Hook>)
-            Err(std::sync::mpsc::TryRecvError::Disconnected)
-        }
+        GLOBAL_CHANNEL.try_recv()
     }
 }

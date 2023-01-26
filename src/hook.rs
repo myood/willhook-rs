@@ -1,7 +1,6 @@
 pub(super) mod inner;
 
-use crate::hook::inner::{setup_keyboard_hook, setup_mouse_hook, InnerHook};
-use std::sync::Arc;
+use crate::hook::inner::InnerHook;
 
 /// Handle to a low-level Windows hook for keyboard and/or mouse events, regardless of application focus.
 /// For more details see the HookBuilder. When the handle goes out of scope, then the low-level hook is removed.
@@ -18,10 +17,7 @@ use std::sync::Arc;
 /// // underlying low-level hook(s) are unhooked from Windows
 /// # }
 /// ```
-pub struct Hook {
-    _keyboard_hook: Option<Arc<InnerHook>>,
-    _mouse_hook: Option<Arc<InnerHook>>,
-}
+pub struct Hook {}
 
 impl Hook {
     /// Tries to receive an event from the low-level hook(s) running in the background thread(s).
@@ -61,6 +57,14 @@ impl Hook {
     /// ```
     pub fn try_recv(&self) -> Result<KeyCode, std::sync::mpsc::TryRecvError> {
         InnerHook::try_recv()
+    }
+}
+
+impl Drop for Hook {
+    fn drop(&mut self) {
+        use crate::hook::inner::GLOBAL_HOOK;
+        let mut global_hook = GLOBAL_HOOK.lock().unwrap();
+        global_hook.drop_hooks();
     }
 }
 
@@ -152,29 +156,32 @@ impl HookBuilder {
     /// Builds the requested hooks and returns common handle for them.
     /// If any hooks are active, then the build fails.
     pub fn build(self) -> Option<Hook> {
+        // No hook was requested - do not default, just return None
         if !self.keyboard && !self.mouse {
             return None
         }
+        
+        use crate::hook::inner::GLOBAL_HOOK;
+        // This lock ensures that during the time of building, no other builder is active.
+        // If different threads attempt to construct the hook handle, 
+        // they may race for underlying static globals holding the actuall inner hooks.
+        // To prevent this, simple mutex is used so that only one instance of HookBuilder::build() is running at the moment.
+        // In "normal" use case one would create a hook at the start of the program, or at least in one thread.
+        // But the goal of this crate was to be failproof, so here comes the lock:
+        let mut global_hooks = GLOBAL_HOOK.lock().unwrap();
 
-        let kb_hook = if self.keyboard {
-            setup_keyboard_hook()
-        } else {
-            None
-        };
-        let m_hook = if self.mouse {
-            setup_mouse_hook()
-        } else {
-            None
-        };
-
-        if kb_hook.is_none() && m_hook.is_none() {
-            None
-        } else {
-            Some(Hook {
-                _keyboard_hook: kb_hook,
-                _mouse_hook: m_hook,
-            })
+        if global_hooks.is_any_hook_present() {
+            return None
         }
+
+        if self.keyboard {
+            global_hooks.setup_keyboard_hook();
+        }
+        if self.mouse {
+            global_hooks.setup_mouse_hook();
+        }
+        
+        return Some(Hook{})
     }
 }
 
