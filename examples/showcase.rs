@@ -22,3 +22,5 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(100));
     };
 }
+
+// TODO CallNextHook should not pass null

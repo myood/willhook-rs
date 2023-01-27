@@ -1,13 +1,13 @@
 pub(super) mod raw;
 pub(super) mod channels;
+pub(super) mod low_level;
 
 use crate::hook::{
-    KeyCode,
+    event::*,
     inner::{raw::RawHook, channels::HookChannels}
 };
 
 use std::{
-    ptr::null_mut,
     thread::JoinHandle,
     sync::{Arc, Condvar, Mutex}
 };
@@ -23,7 +23,7 @@ use winapi::um::{
         processthreadsapi::GetCurrentThreadId,
     winuser::{
     HOOKPROC, LPMSG,
-    CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, GetMessageA, PostThreadMessageA,
+    SetWindowsHookExA, UnhookWindowsHookEx, GetMessageA, PostThreadMessageA,
     WM_QUIT,
     WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
     }
@@ -40,11 +40,13 @@ impl GlobalHooks {
     }
 
     pub fn setup_mouse_hook(&mut self) {
-        self.mouse = Some(InnerHook::new(WH_MOUSE_LL, Some(low_level_keyboard_procedure)));
+        use crate::hook::inner::low_level::mouse_procedure;
+        self.mouse = Some(InnerHook::new(WH_MOUSE_LL, Some(mouse_procedure)));
     }
 
     pub fn setup_keyboard_hook(&mut self) {
-        self.keyboard = Some(InnerHook::new(WH_KEYBOARD_LL, Some(low_level_keyboard_procedure)));
+        use crate::hook::inner::low_level::keyboard_procedure;
+        self.keyboard = Some(InnerHook::new(WH_KEYBOARD_LL, Some(keyboard_procedure)));
     }
 
     pub fn drop_hooks(&mut self) {
@@ -55,43 +57,6 @@ impl GlobalHooks {
 
 static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| HookChannels::new());
 pub(super) static GLOBAL_HOOK: Mutex<GlobalHooks> = Mutex::new(GlobalHooks{keyboard: None, mouse: None});
-
-fn send_key(kc: KeyCode) {
-    let _ignore_result = GLOBAL_CHANNEL.send_key_code(kc);
-}
-
-unsafe extern "system" fn low_level_keyboard_procedure(
-    code: INT,
-    wm_key_code: WPARAM,
-    win_hook_struct: LPARAM,
-) -> LRESULT {
-    // If code is less than zero, then the hook procedure
-    // must pass the message to the CallNextHookEx function
-    // without further processing and should return the value returned by CallNextHookEx.
-    if code < 0 {
-        unsafe {
-            // TODO: hhk param should be registered hook during startup
-            return CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct);
-        }
-    }
-
-    let kc;
-    match wm_key_code as u32 {
-        WM_KEYDOWN => kc = KeyCode::Down,
-        WM_KEYUP => kc = KeyCode::Up,
-        WM_SYSKEYDOWN => kc = KeyCode::Down,
-        WM_SYSKEYUP => kc = KeyCode::Up,
-        _ => unsafe {
-            // We don't recognize the key code. This should never happen, except something really bad is happening with the OS.
-            // TODO: hhk param should be registered hook during startup
-            return CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct);
-        },
-    }
-
-    send_key(kc);
-
-    CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct)
-}
 
 pub struct InnerHook {
     hook_handle: Arc<Mutex<RawHook>>,
@@ -126,7 +91,6 @@ impl Drop for InnerHook {
             }
         }
 
-        
         // Below ridiculous chain of calls is "necessary" to move a value out of a mutex.
         // See : https://stackoverflow.com/questions/30573188/cannot-move-data-out-of-a-mutex
         if let Ok(mut lock) = self.thread_handle.lock() {
@@ -205,7 +169,7 @@ impl InnerHook {
         }
     }
 
-    pub fn try_recv() -> Result<KeyCode, std::sync::mpsc::TryRecvError> {
+    pub fn try_recv() -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         GLOBAL_CHANNEL.try_recv()
     }
 }

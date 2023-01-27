@@ -1,6 +1,9 @@
 pub(super) mod inner;
+pub mod event;
 
 use crate::hook::inner::InnerHook;
+
+use self::event::InputEvent;
 
 /// Handle to a low-level Windows hook for keyboard and/or mouse events, regardless of application focus.
 /// For more details see the HookBuilder. When the handle goes out of scope, then the low-level hook is removed.
@@ -41,7 +44,7 @@ impl Hook {
     /// 
     /// ``` rust
     /// # fn main() {
-    /// # use monke::hook::{KeyCode, HookBuilder};
+    /// # use monke::hook::{KeyboardEvent, HookBuilder};
     /// # let hook = HookBuilder::new().with_mouse().build().unwrap();
     /// use std::sync::mpsc::channel;
     /// use std::time::Instant;
@@ -49,13 +52,13 @@ impl Hook {
     /// while let Ok(event) = hook.try_recv() {
     ///     // Process only "press ups" to find unique key presses,
     ///     // because if a user holds a key, then Windows can emit multiple "key down" events
-    ///     if event == KeyCode::Up {
+    ///     if event == KeyboardEvent::Up {
     ///         event_sender.send( (event, Instant::now() ));
     ///     }
     /// }
     /// # }
     /// ```
-    pub fn try_recv(&self) -> Result<KeyCode, std::sync::mpsc::TryRecvError> {
+    pub fn try_recv(&self) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         InnerHook::try_recv()
     }
 }
@@ -184,10 +187,3 @@ impl HookBuilder {
         return Some(Hook{})
     }
 }
-
-#[derive(Debug, PartialEq)]
-pub enum KeyCode {
-    Down,
-    Up,
-}
-

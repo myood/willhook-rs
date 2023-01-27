@@ -1,12 +1,12 @@
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-use crate::hook::KeyCode;
+use crate::hook::event::*;
 
 pub struct HookChannels {
-    keyboard_sender: Mutex<Sender<KeyCode>>,
-    mouse_sender: Mutex<Sender<KeyCode>>,
-    receiver: Mutex<Receiver<KeyCode>>,
+    keyboard_sender: Mutex<Sender<InputEvent>>,
+    mouse_sender: Mutex<Sender<InputEvent>>,
+    receiver: Mutex<Receiver<InputEvent>>,
 }
 
 impl HookChannels {
@@ -19,15 +19,15 @@ impl HookChannels {
         }
     }
 
-    pub fn send_key_code(&self, kc: KeyCode) -> Result<(), std::sync::mpsc::SendError<KeyCode>> {
-        self.keyboard_sender.lock().unwrap().send(kc)
+    pub fn send_keyboard_event(&self, ke: KeyboardEvent) -> Result<(), std::sync::mpsc::SendError<InputEvent>> {
+        self.keyboard_sender.lock().unwrap().send(InputEvent::Keyboard(ke))
     }
 
-    pub fn send_mouse_code(&self, mc: KeyCode) -> Result<(), std::sync::mpsc::SendError<KeyCode>>  {
-        self.mouse_sender.lock().unwrap().send(mc)
+    pub fn send_mouse_event(&self, me: MouseEvent) -> Result<(), std::sync::mpsc::SendError<InputEvent>>  {
+        self.mouse_sender.lock().unwrap().send(InputEvent::Mouse(me))
     }
 
-    pub fn try_recv(&self) -> Result<KeyCode, std::sync::mpsc::TryRecvError> {
+    pub fn try_recv(&self) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         self.receiver.lock().unwrap().try_recv()
     }
 }
