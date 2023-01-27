@@ -44,16 +44,18 @@ impl Hook {
     /// 
     /// ``` rust
     /// # fn main() {
-    /// # use monke::hook::{KeyboardEvent, HookBuilder};
-    /// # let hook = HookBuilder::new().with_mouse().build().unwrap();
+    /// # use monke::hook::event::*;
+    /// # let hook = monke::mouse_hook().unwrap();
     /// use std::sync::mpsc::channel;
     /// use std::time::Instant;
     /// let (event_sender, _event_receiver) = channel();
     /// while let Ok(event) = hook.try_recv() {
     ///     // Process only "press ups" to find unique key presses,
     ///     // because if a user holds a key, then Windows can emit multiple "key down" events
-    ///     if event == KeyboardEvent::Up {
-    ///         event_sender.send( (event, Instant::now() ));
+    ///     if let InputEvent::Keyboard(event) = event {
+    ///         if KeyPress::Up == event.pressed {
+    ///             event_sender.send( (event, Instant::now() ));
+    ///         }
     ///     }
     /// }
     /// # }
