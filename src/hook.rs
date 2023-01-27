@@ -10,7 +10,7 @@ use crate::hook::inner::InnerHook;
 /// # fn main() {
 /// # use monke::hook::HookBuilder;
 /// {
-///     // create low-level hook and store handle in `hook`
+///     // create low-level hook and return the handle
 ///     let hook = HookBuilder::new().with_mouse().build().unwrap();
 /// }
 /// // hook handle goes out of scope,
