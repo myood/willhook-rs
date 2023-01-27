@@ -60,35 +60,37 @@ fn build_fails_if_different_type_of_hook_exists_6() {
 
 #[test]
 fn building_data_race() {
+    // If tests are run in paraller, then they would expose data race sporadically.
+    // But this test starts a lot of threads to race symptops appearance probability more likely.
+    // This test detected data race between HookBuilder::build() in the past.
     let repetitions = 100usize;
-    for k in 0..repetitions {
-        use std::sync::{Arc, Barrier, atomic::{AtomicUsize, Ordering}};
+    for _ in 0..repetitions {
+        use std::sync::{Arc, Barrier};
         use std::thread;
 
         let racers = 1000usize;
     
         let barrier = Arc::new(Barrier::new(racers));
         let mut handles = Vec::with_capacity(racers);
-
-        let mut some = Arc::new(AtomicUsize::new(0));
     
-        for i in 0..racers {
+        for _ in 0..racers {
             let b = Arc::clone(&barrier);
-            let c = some.clone();
             handles.push(thread::spawn(move || {
                 b.wait();
-                let h = keyboard_hook();
-                if h.is_some() {
-                    c.fetch_add(1usize, Ordering::SeqCst);
-                }
-                h
+                keyboard_hook()
             }));
         }
     
-        let _ = handles.into_iter()
-            .for_each(|jh| { jh.join(); } );
-
-        // No matter the number of builders, there should be only one successful build
-        assert_eq!(1, some.load(Ordering::SeqCst));
+        // Wait while all hooks were attempted to be created.
+        // We have to store all values.
+        // That is to ensure that the successfuly created hook does not go out of scope while other `racers` are running.
+        // If that hook would go out of scope, the other running `racers` could have a chance to create a hook, making test invalid.
+        let hooks = handles.into_iter()
+            .map(|jh| { jh.join().unwrap() } )
+            .collect::<Vec<Option<Hook>>>();
+        // All hooks are collected, which means all `racers` are done. Only now we can count.
+        let hooks = hooks.into_iter().filter(|h| h.is_some()).count();
+        // No matter the number of builders, there should be only one successful build.
+        assert_eq!(1, hooks);
     }
 }
