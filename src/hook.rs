@@ -6,12 +6,12 @@ use crate::hook::inner::InnerHook;
 use self::event::InputEvent;
 
 /// Handle to a low-level Windows hook for keyboard and/or mouse events, regardless of application focus.
-/// For more details see the HookBuilder. When the handle goes out of scope, then the low-level hook is removed.
+/// For more details see the [HookBuilder]. When the handle goes out of scope, then the low-level hook is removed.
 /// 
 /// Example
 /// ```rust
 /// # fn main() {
-/// # use monke::hook::HookBuilder;
+/// # use willhook::hook::HookBuilder;
 /// {
 ///     // create low-level hook and return the handle
 ///     let hook = HookBuilder::new().with_mouse().build().unwrap();
@@ -28,7 +28,7 @@ impl Hook {
     /// 
     /// ```rust
     /// # fn main() {
-    /// # use monke::hook::HookBuilder;
+    /// # use willhook::hook::HookBuilder;
     /// # use std::sync::mpsc::TryRecvError;
     /// // create low-level hook and store handle in `hook`
     /// let hook = HookBuilder::new().with_mouse().build().unwrap();
@@ -44,8 +44,8 @@ impl Hook {
     /// 
     /// ``` rust
     /// # fn main() {
-    /// # use monke::hook::event::*;
-    /// # let hook = monke::mouse_hook().unwrap();
+    /// # use willhook::hook::event::*;
+    /// # let hook = willhook::mouse_hook().unwrap();
     /// use std::sync::mpsc::channel;
     /// use std::time::Instant;
     /// let (event_sender, _event_receiver) = channel();
@@ -80,7 +80,7 @@ impl Drop for Hook {
 /// 
 /// # Build hook for both mouse and keyboard:
 /// ```rust
-/// use monke::hook::HookBuilder;
+/// use willhook::hook::HookBuilder;
 /// fn main() {
 ///     let hook = HookBuilder::new()
 ///                 .with_mouse()
@@ -95,7 +95,7 @@ impl Drop for Hook {
 /// At least one hook type has to be specified, otherwise build will fail:
 /// ```rust
 /// # fn main() {
-/// # use monke::hook::HookBuilder;
+/// # use willhook::hook::HookBuilder;
 /// let bad_hook = HookBuilder::new().build();
 /// assert!(bad_hook.is_none());
 /// # }
@@ -104,7 +104,7 @@ impl Drop for Hook {
 /// 
 /// ```rust
 /// # fn main() {
-/// # use monke::hook::HookBuilder;
+/// # use willhook::hook::HookBuilder;
 /// let hook = HookBuilder::new()
 ///             .with_mouse()
 ///             .build();
@@ -121,7 +121,7 @@ impl Drop for Hook {
 /// 
 /// ```rust
 /// # fn main() {
-/// # use monke::hook::HookBuilder;
+/// # use willhook::hook::HookBuilder;
 /// let hook = HookBuilder::new()
 ///             .with_mouse()
 ///             .build();

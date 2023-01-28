@@ -1,13 +1,13 @@
 #![cfg(windows)]
 
-use monke::monke_hook;
+use willhook::willhook_hook;
 use std::sync::{Arc, atomic::{Ordering, AtomicBool}};
 
 fn main() {
     let is_running = Arc::new(AtomicBool::new(true));
     let set_running = is_running.clone();
 
-    let h = monke_hook().unwrap();
+    let h = willhook_hook().unwrap();
 
     ctrlc::set_handler(move || {
         set_running.store(false, Ordering::SeqCst);
