@@ -5,6 +5,12 @@
 //! 
 //! Under the hood the crate leverages the **WI**ndows **L**ow-**L**evel **HOOK**s.
 //! You can read more about that topic on [MSDN](https://learn.microsoft.com/en-us/windows/win32/winmsg/about-hooks?redirectedfrom=MSDN).
+//!
+//! The crate was created for learning-purposes mostly and for my hobby project, but we will where it goes.
+//! 
+//! The design goals for this crate are to be: correct, misuse-proof and fail-proof.
+//! Having that in mind, the implementation follows best effort to avoid any panic.
+//! In the worst case, it should just return incomplete input event (e.g. with missing keyboard key code).
 //! 
 //! ### What this crate does NOT provide
 //! 
@@ -16,13 +22,8 @@
 //! # Warning: The currenct state
 //! 
 //! Currently it supports mouse and keyboard actions in almost full extent, see [hook::event] module for details.
-//!
-//! The design goals for this crate are to be: correct, misuse-proof and fail-proof.
-//! The crate was created for learning-purposes mostly and for my hobby project, but we will where it goes.
-//! 
-//! There are tests, but keep in mind that the crate is "young".
-//! 
-//! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects.*
+//! There are tests, but keep in mind that the crate is "young". I'm quite experienced C++ programmer, but my knowledge about Rust is limited.
+//! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
 //! 
 //! # How it works
 //! 
