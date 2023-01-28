@@ -53,8 +53,9 @@ impl Hook {
     ///     // Process only "press ups" to find unique key presses,
     ///     // because if a user holds a key, then Windows can emit multiple "key down" events
     ///     if let InputEvent::Keyboard(event) = event {
-    ///         if KeyPress::Up == event.pressed {
-    ///             event_sender.send( (event, Instant::now() ));
+    ///         match event.pressed {
+    ///             KeyPress::Up(is_system) => { event_sender.send( (event, Instant::now() )); },
+    ///             _ => continue,
     ///         }
     ///     }
     /// }
