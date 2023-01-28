@@ -21,9 +21,14 @@
 //! 
 //! # Warning: The currenct state
 //! 
-//! Currently it supports mouse and keyboard actions in almost full extent, see [hook::event] module for details.
+//! Currently it supports mouse and keyboard actions to some extent, see [hook::event] module for details.
 //! There are tests, but keep in mind that the crate is "young". I'm quite experienced C++ programmer, but my knowledge about Rust is limited.
 //! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
+//! TODO:
+//! - implement mouse move and mouse wheel
+//! - limit the "pub" usage
+//! - document unsafe code
+//! - write more tests
 //! 
 //! # How it works
 //! 
