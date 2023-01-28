@@ -25,7 +25,7 @@ use winapi::um::{
     HOOKPROC, LPMSG,
     SetWindowsHookExA, UnhookWindowsHookEx, GetMessageA, PostThreadMessageA,
     WM_QUIT,
-    WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    WH_KEYBOARD_LL, WH_MOUSE_LL,
     }
 };
 
