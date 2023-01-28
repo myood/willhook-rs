@@ -9,12 +9,16 @@
 //! ### What this crate does NOT provide
 //! 
 //! This crate is intended for "read-only" access to hooks. It does not support injecting input events or altering them.
+//! If you are looking for that kind of functionality, you can give [mki](https://crates.io/crates/mki) a try.
+//! In comparison, the mki crate supports also Linux, but does not cleanup the low-level hooks (by [unhooking them](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unhookwindowshookex)) and threads behind them (by [joinging with them](https://doc.rust-lang.org/std/thread/struct.JoinHandle.html#method.join)).
+//! This *may* not be an issue for you.
 //! 
 //! # Warning: The currenct state
 //! 
 //! Currently it supports mouse and keyboard actions in almost full extent, see [hook::event] module for details.
-//! 
+//!
 //! The design goals for this crate are to be: correct, misuse-proof and fail-proof.
+//! The crate was created for learning-purposes mostly and for my hobby project, but we will where it goes.
 //! 
 //! There are tests, but keep in mind that the crate is "young".
 //! 
@@ -41,12 +45,6 @@
 //! Note: at the moment the channels for passing events between threads are not "freed" when [hook::Hook] is dropped. 
 //!     This means that if not all events were consumed before unhooking, then next hook may receive "old" input events.
 //!     That is, input events recorded from before it's creation (or re-creation, so to speak).
-//! 
-//! # Alternatives:
-//! 
-
-
-
 
 pub mod hook;
 
