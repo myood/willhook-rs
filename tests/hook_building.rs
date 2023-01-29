@@ -1,5 +1,5 @@
 use willhook::hook::{HookBuilder, Hook};
-use willhook::{mouse_hook, keyboard_hook, willhook_hook};
+use willhook::{mouse_hook, keyboard_hook, willhook};
 
 #[test]
 fn default_build_fails() {
@@ -23,8 +23,8 @@ fn build_fails_if_hook_exists_2() {
 }
 #[test]
 fn build_fails_if_hook_exists_3() {
-    let _existing = willhook_hook();
-    assert!(willhook_hook().is_none());
+    let _existing = willhook();
+    assert!(willhook().is_none());
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn build_fails_if_different_type_of_hook_exists_1() {
 #[test]
 fn build_fails_if_different_type_of_hook_exists_2() {
     let _existing = keyboard_hook();
-    assert!(willhook_hook().is_none());
+    assert!(willhook().is_none());
 }
 #[test]
 fn build_fails_if_different_type_of_hook_exists_3() {
@@ -45,16 +45,16 @@ fn build_fails_if_different_type_of_hook_exists_3() {
 #[test]
 fn build_fails_if_different_type_of_hook_exists_4() {
     let _existing = mouse_hook();
-    assert!(willhook_hook().is_none());
+    assert!(willhook().is_none());
 }
 #[test]
 fn build_fails_if_different_type_of_hook_exists_5() {
-    let _existing = willhook_hook();
+    let _existing = willhook();
     assert!(mouse_hook().is_none());
 }
 #[test]
 fn build_fails_if_different_type_of_hook_exists_6() {
-    let _existing = willhook_hook();
+    let _existing = willhook();
     assert!(keyboard_hook().is_none());
 }
 

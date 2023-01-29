@@ -1,13 +1,13 @@
 #![cfg(windows)]
 
-use willhook::willhook_hook;
+use willhook::willhook;
 use std::sync::{Arc, atomic::{Ordering, AtomicBool}};
 
 fn main() {
     let is_running = Arc::new(AtomicBool::new(true));
     let set_running = is_running.clone();
 
-    let h = willhook_hook().unwrap();
+    let h = willhook().unwrap();
 
     ctrlc::set_handler(move || {
         set_running.store(false, Ordering::SeqCst);

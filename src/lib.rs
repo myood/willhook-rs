@@ -41,16 +41,14 @@
 //! - return the handle to the underlying low-level hooks as [hook::Hook]
 //! 
 //! When the [hook::Hook] goes out of scope, the underlying resources supporting low-level hooks are dropped:
-//! - each of the background threads is properly joined
 //! - each of the underlying low-level hooks is unhooked from the Windows Kernel
+//! - each of the background threads is properly joined
+//! - all pending events are dropped (background channels are drained)
 //! 
 //! When the [hook::Hook] is active (in scope / not dropped). 
 //! Then one can receive recorded [hook::event::InputEvent]s via [hook::Hook::try_recv].
 //! It works similiarly to [std::sync::mpsc::Receiver::try_recv].
 //! 
-//! Note: at the moment the channels for passing events between threads are not "freed" when [hook::Hook] is dropped. 
-//!     This means that if not all events were consumed before unhooking, then next hook may receive "old" input events.
-//!     That is, input events recorded from before it's creation (or re-creation, so to speak).
 
 pub mod hook;
 

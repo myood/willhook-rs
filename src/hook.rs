@@ -68,9 +68,10 @@ impl Hook {
 
 impl Drop for Hook {
     fn drop(&mut self) {
-        use crate::hook::inner::GLOBAL_HOOK;
+        use crate::hook::inner::{GLOBAL_HOOK, GLOBAL_CHANNEL};
         let mut global_hook = GLOBAL_HOOK.lock().unwrap();
         global_hook.drop_hooks();
+        GLOBAL_CHANNEL.drain();
     }
 }
 

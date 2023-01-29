@@ -55,7 +55,7 @@ impl GlobalHooks {
     }
 }
 
-static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| HookChannels::new());
+pub(super) static GLOBAL_CHANNEL: Lazy<HookChannels> = Lazy::new(|| HookChannels::new());
 pub(super) static GLOBAL_HOOK: Mutex<GlobalHooks> = Mutex::new(GlobalHooks{keyboard: None, mouse: None});
 
 pub struct InnerHook {
