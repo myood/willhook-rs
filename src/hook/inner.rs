@@ -66,7 +66,7 @@ pub struct InnerHook {
 impl Drop for InnerHook {
     fn drop(&mut self) {
         let (winapi_handle, thread_id) = if let Ok(inner) = self.hook_handle.lock() {
-            ((*inner).raw_handle as HHOOK, (*inner).thread_id)
+            ((*inner).raw_handle, (*inner).thread_id)
         } else {
             // The hook thread panicked, apparently.
             return;
@@ -123,7 +123,7 @@ impl InnerHook {
             }
 
             // Set the HHOOK and ThreadID so that the "owner" thread can later kill hook and join with it
-            if hhook as usize != 0usize {
+            if hhook != NULL as HHOOK {
                 if let Ok(mut exclusive) = deferred_handle.lock() {
                     exclusive.raw_handle = hhook;
                     exclusive.thread_id = unsafe { GetCurrentThreadId() };
@@ -147,7 +147,7 @@ impl InnerHook {
             unsafe {
                 GetMessageA(
                     msg.as_mut_ptr() as LPMSG,
-                    -1isize as HWND,
+                    -1isize as HWND,  // -1 => Wait only for message to this thread specifically
                     NULL as UINT,
                     NULL as UINT,
                 );
