@@ -25,6 +25,7 @@
 //! 
 //! Currently it supports mouse and keyboard actions to some extent, see [hook::event] module for details.
 //! There are sparse tests, which will grow over time, but keep in mind that the crate is "young".
+//! Note: the tests should be run with `cargo test -- --test-threads=1` - you can try to figure out why. :-)
 //! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
 //! 
 //! TODO:

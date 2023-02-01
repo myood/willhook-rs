@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use core::panic;
 use std::convert::From;
 use winapi::shared::minwindef::*;
 use winapi::um::winuser::*;
