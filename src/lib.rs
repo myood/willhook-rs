@@ -17,18 +17,19 @@
 //! This crate is intended for "read-only" access to hooks. It does not support injecting input events or altering them.
 //! If you are looking for that kind of functionality, you can give [mki](https://crates.io/crates/mki) a try.
 //! In comparison, the mki crate supports also Linux, but does not cleanup the low-level hooks (by [unhooking them](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unhookwindowshookex)) and threads behind them (by [joinging with them](https://doc.rust-lang.org/std/thread/struct.JoinHandle.html#method.join)).
-//! This *may* not be an issue for you.
+//! This *may* not be an issue for you. The addition of "injecting" and "altering" input events to [willhook] is a possibility, although it is not top priority.
 //! 
 //! # Warning: The currenct state
 //! 
 //! Currently it supports mouse and keyboard actions to some extent, see [hook::event] module for details.
 //! There are tests, but keep in mind that the crate is "young".
 //! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
+//! 
 //! TODO:
-//! - implement mouse move and mouse wheel
-//! - limit the "pub" usage
+//! - finish implementation of mouse move and mouse wheel
 //! - document unsafe code
 //! - write more tests
+//! - limit the "pub" between private modules (between "implementation", the public API is well defined I think)
 //! 
 //! # How it works
 //! 
