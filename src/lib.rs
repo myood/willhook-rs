@@ -1,3 +1,5 @@
+//! # Consider this crate as work-in-progress.
+//!
 //! # What this crate provides
 //! 
 //! This Windows-only crate provides safe and correct means to listen for keyboard and mouse events regardless of application focus.
@@ -6,7 +8,7 @@
 //! Under the hood the crate leverages the **WI**ndows **L**ow-**L**evel **HOOK**s.
 //! You can read more about that topic on [MSDN](https://learn.microsoft.com/en-us/windows/win32/winmsg/about-hooks?redirectedfrom=MSDN).
 //!
-//! The crate was created for learning-purposes mostly and for my hobby project, but we will where it goes.
+//! The crate was created for learning-purposes mostly and for my hobby project, but we will see where it goes.
 //! 
 //! The design goals for this crate are to be: correct, misuse-proof and fail-proof.
 //! Having that in mind, the implementation follows best effort to avoid any panic.
@@ -19,10 +21,10 @@
 //! In comparison, the mki crate supports also Linux, but does not cleanup the low-level hooks (by [unhooking them](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unhookwindowshookex)) and threads behind them (by [joinging with them](https://doc.rust-lang.org/std/thread/struct.JoinHandle.html#method.join)).
 //! This *may* not be an issue for you. The addition of "injecting" and "altering" input events to [willhook] is a possibility, although it is not top priority.
 //! 
-//! # Warning: The currenct state
+//! # Warning: The current state
 //! 
 //! Currently it supports mouse and keyboard actions to some extent, see [hook::event] module for details.
-//! There are tests, but keep in mind that the crate is "young".
+//! There are sparse tests, which will grow over time, but keep in mind that the crate is "young".
 //! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
 //! 
 //! TODO:
@@ -30,6 +32,7 @@
 //! - document unsafe code
 //! - write more tests
 //! - limit the "pub" between private modules (between "implementation", the public API is well defined I think)
+//! - maybe do some "target based" compilation, so that this crate can be included in linux projects also?
 //! 
 //! # How it works
 //! 
