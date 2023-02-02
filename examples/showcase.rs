@@ -16,7 +16,7 @@ fn main() {
 
     while is_running.load(Ordering::SeqCst) {
         if let Ok(ie) = h.try_recv() {
-            println!("Key event: {:?}", ie);
+            println!("Input event: {:?}", ie);
         } else {
             std::thread::yield_now();   
         }

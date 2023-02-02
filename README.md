@@ -24,7 +24,7 @@ This *may* not be an issue for you. The addition of "injecting" and "altering" i
 
 # Warning: The current state
 
-Currently it supports mouse and keyboard actions to some extent, see [hook::event] module for details.
+Currently it supports keyboard events and partially mouse actions (some info in mouse events is missing).
 There are sparse tests, which will grow over time, but keep in mind that the crate is "young".
 Note: the tests should be run with `cargo test -- --test-threads=1` - you can try to figure out why. :-)
 *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
@@ -55,3 +55,53 @@ When the [hook::Hook] is active (in scope / not dropped).
 Then one can receive recorded [hook::event::InputEvent]s via [hook::Hook::try_recv].
 It works similiarly to [std::sync::mpsc::Receiver::try_recv].
 
+# Quick example
+
+```rust
+use willhook::willhook;
+use std::sync::{Arc, atomic::{Ordering, AtomicBool}};
+
+fn main() {
+    let is_running = Arc::new(AtomicBool::new(true));
+    let set_running = is_running.clone();
+
+    let h = willhook().unwrap();
+
+    ctrlc::set_handler(move || {
+        set_running.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl-C handler");
+
+    while is_running.load(Ordering::SeqCst) {
+        if let Ok(ie) = h.try_recv() {
+            println!("Input event: {:?}", ie);
+        } else {
+            std::thread::yield_now();   
+        }
+    };
+}
+```
+
+Example output:
+
+```
+PS ~ cargo run --example showcase
+    Finished dev [unoptimized + debuginfo] target(s) in 0.03s
+     Running `target\debug\examples\showcase.exe`
+Key event: Keyboard(KeyboardEvent { pressed: Down(false), key: Some(Q), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Up(false), key: Some(Q), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Down(false), key: Some(A), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Down(false), key: Some(S), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Up(false), key: Some(A), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Down(false), key: Some(D), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Up(false), key: Some(S), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Up(false), key: Some(D), is_injected: Some(NotInjected) })
+Key event: Mouse(MouseEvent { event: Move(MouseMoveEvent { point: Point { x: 0, y: 0 } }), is_injected: Some(NotInjected) })
+Key event: Mouse(MouseEvent { event: Press(MousePressEvent { pressed: Down, button: Left(SingleClick) }), is_injected: Some(NotInjected) })
+Key event: Mouse(MouseEvent { event: Move(MouseMoveEvent { point: Point { x: 0, y: 0 } }), is_injected: Some(NotInjected) })
+Key event: Mouse(MouseEvent { event: Press(MousePressEvent { pressed: Up, button: Left(SingleClick) }), is_injected: Some(NotInjected) })
+Key event: Mouse(MouseEvent { event: Press(MousePressEvent { pressed: Down, button: Right(SingleClick) }), is_injected: Some(NotInjected) })
+Key event: Mouse(MouseEvent { event: Press(MousePressEvent { pressed: Up, button: Right(SingleClick) }), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Down(false), key: Some(LeftControl), is_injected: Some(NotInjected) })
+Key event: Keyboard(KeyboardEvent { pressed: Down(false), key: Some(C), is_injected: Some(NotInjected) })
+```
