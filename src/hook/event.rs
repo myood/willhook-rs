@@ -56,6 +56,14 @@ impl From<DWORD> for IsKeyboardEventInjected {
     }
 }
 
+/// WIP: Enum to distinguish system key press from normal key press.
+pub enum IsSystemKeyPress {
+    /// System key is basically any key pressed/released while ALT is also pressed.
+    System,
+    /// Indicates that key input event occured while ALT key was NOT pressed.
+    Normal,
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum KeyPress {
     Down(bool),
