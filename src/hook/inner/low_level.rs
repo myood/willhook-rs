@@ -12,19 +12,21 @@ unsafe fn call_next_hook(hhk: HHOOK, n_code: INT, w_param: WPARAM, l_param: LPAR
     CallNextHookEx(hhk, n_code, w_param, l_param)
 }
 
-
-// In the case of tests, use home-made mockfor CallNextHookEx
+// In the case of tests, use home-made mock for CallNextHookEx
 #[cfg(test)]
+use std::sync::Mutex;
 use std::sync::mpsc::*;
 #[cfg(test)]
 use once_cell::sync::Lazy;
-
 #[cfg(test)]
 static mut CALL_NEXT_HOOK_CALLS: Lazy<(Sender<(usize, INT, WPARAM, LPARAM)>, Receiver<(usize, INT, WPARAM, LPARAM)>)> = Lazy::new(|| { channel() });
 #[cfg(test)]
+static mut CALL_NEXT_HOOK_RETURN: Mutex<LRESULT> = Mutex::new(0 as LRESULT);
+#[cfg(test)]
 unsafe fn call_next_hook(hhk: HHOOK, n_code: INT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
-    CALL_NEXT_HOOK_CALLS.0.send((hhk as usize, n_code, w_param, l_param));
-    0 as LRESULT
+    assert!(CALL_NEXT_HOOK_CALLS.0.send((hhk as usize, n_code, w_param, l_param)).is_ok());
+    let rv = *(CALL_NEXT_HOOK_RETURN.lock().unwrap());
+    rv
 }
 
 
@@ -53,11 +55,16 @@ pub unsafe extern "system" fn keyboard_procedure(
 #[cfg(test)]
 mod keyboard_procedure_tests {
     use quickcheck::TestResult;
-    use winapi::{shared::{minwindef::{WPARAM, LPARAM, UINT, INT, DWORD}, basetsd::ULONG_PTR, ntdef::NULL}, um::winuser::{WM_KEYDOWN, HC_ACTION, WM_INPUT, WM_SYSKEYDOWN, WM_KEYUP, WM_SYSKEYUP}};
+    use winapi::{
+        shared::{
+            minwindef::{WPARAM, LPARAM, UINT, INT, DWORD, LRESULT},
+            basetsd::ULONG_PTR,
+            ntdef::NULL},
+        um::winuser::{WM_KEYDOWN, HC_ACTION, WM_INPUT, WM_SYSKEYDOWN, WM_KEYUP, WM_SYSKEYUP}};
 
     use crate::hook::event::{InputEvent, KeyPress, KeyboardEvent};
 
-    use super::{keyboard_procedure, CALL_NEXT_HOOK_CALLS};
+    use super::{keyboard_procedure, CALL_NEXT_HOOK_CALLS, CALL_NEXT_HOOK_RETURN};
     use super::GLOBAL_CHANNEL;
 
     use quickcheck::*;
@@ -70,29 +77,48 @@ mod keyboard_procedure_tests {
         extra_info: ULONG_PTR,
     }
 
+    unsafe fn assert_call_next_hook_called_once(expected: (usize, i32, usize, isize)) {
+        assert_call_next_hook_equals(Ok(expected));
+        assert_call_next_hook_equals(Err(std::sync::mpsc::TryRecvError::Empty));
+
+    }
+
     unsafe fn assert_call_next_hook_equals(expected:  Result<(usize, i32, usize, isize), std::sync::mpsc::TryRecvError>) {
         let actual = CALL_NEXT_HOOK_CALLS.1.try_recv();
-        assert!(false);
         assert_eq!(expected, actual);
     }
 
-    unsafe fn assert_input_event_equals(r: Result<InputEvent, std::sync::mpsc::TryRecvError>) {
+    unsafe fn assert_one_input_event_present(ie: InputEvent) {
+        assert_current_input_event_equals(Ok(ie));
+        assert_there_are_no_more_input_events();
+    }
+
+    unsafe fn assert_there_are_no_more_input_events() {
+        assert_current_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
+    }
+
+    unsafe fn assert_current_input_event_equals(r: Result<InputEvent, std::sync::mpsc::TryRecvError>) {
         let ie = GLOBAL_CHANNEL.try_recv();
         assert_eq!(r, ie);
     }
 
+    unsafe fn set_call_next_hook_return_value(rv: LPARAM) {
+        *(CALL_NEXT_HOOK_RETURN.lock().unwrap()) = rv;
+    }
+
     quickcheck! {
-        fn invalid_code_calls_next_hook(code: INT) -> TestResult {
+        fn invalid_code_calls_next_hook(code: INT, rv: LRESULT) -> TestResult {
             if code == HC_ACTION {
                 return TestResult::discard()
             }
+
             let w_param = WM_INPUT as WPARAM;
             let l_param = NULL as LPARAM;
             unsafe {
-                keyboard_procedure(code, w_param, l_param);
-                assert_call_next_hook_equals(Ok((NULL as usize, code, w_param, l_param)));
-                assert_call_next_hook_equals(Err(std::sync::mpsc::TryRecvError::Empty) );
-                assert_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
+                set_call_next_hook_return_value(rv);
+                assert_eq!(rv, keyboard_procedure(code, w_param, l_param));
+                assert_call_next_hook_called_once((NULL as usize, code, w_param, l_param));
+                assert_there_are_no_more_input_events();
             }
 
             TestResult::from_bool(true)
@@ -103,14 +129,12 @@ mod keyboard_procedure_tests {
         let w_param = w_param as WPARAM;
         let l_param = NULL as LPARAM;
         keyboard_procedure(HC_ACTION, w_param as usize, l_param);
-        assert_call_next_hook_equals(Ok((NULL as usize, HC_ACTION, w_param, l_param)) );
-        assert_call_next_hook_equals(Err(std::sync::mpsc::TryRecvError::Empty) );
-        assert_input_event_equals(Ok(InputEvent::Keyboard(KeyboardEvent{
+        assert_call_next_hook_called_once((NULL as usize, HC_ACTION, w_param, l_param));
+        assert_one_input_event_present(InputEvent::Keyboard(KeyboardEvent{
             pressed: press,
             key: None,
             is_injected: None,
-        })));
-        assert_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
+        }));
     }
 
     #[test]
