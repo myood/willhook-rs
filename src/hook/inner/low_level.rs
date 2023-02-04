@@ -48,12 +48,15 @@ pub unsafe extern "system" fn keyboard_procedure(
 
 #[cfg(test)]
 mod keyboard_procedure_tests {
-    use winapi::{shared::{minwindef::{WPARAM, LPARAM, UINT, DWORD}, basetsd::ULONG_PTR, ntdef::NULL}, um::winuser::{WM_KEYDOWN, HC_ACTION, WM_INPUT, WM_SYSKEYDOWN, WM_KEYUP, WM_SYSKEYUP}};
+    use quickcheck::TestResult;
+    use winapi::{shared::{minwindef::{WPARAM, LPARAM, UINT, INT, DWORD}, basetsd::ULONG_PTR, ntdef::NULL}, um::winuser::{WM_KEYDOWN, HC_ACTION, WM_INPUT, WM_SYSKEYDOWN, WM_KEYUP, WM_SYSKEYUP}};
 
     use crate::hook::event::{InputEvent, KeyPress, KeyboardEvent};
 
     use super::{keyboard_procedure, CALL_NEXT_HOOK_CALLS};
     use super::GLOBAL_CHANNEL;
+
+    use quickcheck::*;
 
     struct MOCK_KBD_LL_HOOK_STRUCT {
         vk_code: DWORD,
@@ -63,10 +66,8 @@ mod keyboard_procedure_tests {
         extra_info: ULONG_PTR,
     }
 
-    unsafe fn assert_call_next_hook_equals(expected:  (usize, i32, usize, isize)) {
-        let call = CALL_NEXT_HOOK_CALLS.1.try_recv();
-        assert!(call.is_ok());
-        let actual = call.unwrap();
+    unsafe fn assert_call_next_hook_equals(expected:  Result<(usize, i32, usize, isize), std::sync::mpsc::TryRecvError>) {
+        let actual = CALL_NEXT_HOOK_CALLS.1.try_recv();
         assert_eq!(expected, actual);
     }
 
@@ -75,26 +76,20 @@ mod keyboard_procedure_tests {
         assert_eq!(r, ie);
     }
 
-    #[test]
-    fn invalid_code() {
-        println!("start test");
-        unsafe {
-            println!("start loop");
-            for ic in i32::MIN..i32::MAX {
-                println!("{}", ic);
-                //if HC_ACTION == ic  { 
-                //    continue;
-                //}
-                let w_param = WM_INPUT as WPARAM;
-                let l_param = NULL as LPARAM;
-                println!("runsut");
-                keyboard_procedure(-1, w_param, l_param);
-                println!("assert1");
-                assert_call_next_hook_equals((NULL as usize, -1, w_param, l_param));
-                println!("assert2");
-                assert_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
-                println!("testdone");
+    quickcheck! {
+        fn invalid_code_calls_next_hook(code: INT) -> TestResult {
+            if code == HC_ACTION {
+                return TestResult::discard()
             }
+            let w_param = WM_INPUT as WPARAM;
+            let l_param = NULL as LPARAM;
+            unsafe {
+                keyboard_procedure(code, w_param, l_param);
+                assert_call_next_hook_equals(Ok((NULL as usize, code, w_param, l_param)));
+                assert_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
+            }
+
+            TestResult::from_bool(true)
         }
     }
 
@@ -102,7 +97,7 @@ mod keyboard_procedure_tests {
         let w_param = w_param as WPARAM;
         let l_param = NULL as LPARAM;
         keyboard_procedure(HC_ACTION, w_param as usize, l_param);
-        assert_call_next_hook_equals((NULL as usize, HC_ACTION, w_param, l_param) );
+        assert_call_next_hook_equals(Ok((NULL as usize, HC_ACTION, w_param, l_param)) );
         assert_input_event_equals(Ok(InputEvent::Keyboard(KeyboardEvent{
             pressed: press,
             key: None,
@@ -116,8 +111,8 @@ mod keyboard_procedure_tests {
         unsafe {
             run_invalid_kbd_ll_hook_struct(WM_KEYDOWN, KeyPress::Down(false));
             run_invalid_kbd_ll_hook_struct(WM_SYSKEYDOWN, KeyPress::Down(true));
-            run_invalid_kbd_ll_hook_struct(WM_KEYUP, KeyPress::Down(false));
-            run_invalid_kbd_ll_hook_struct(WM_SYSKEYUP, KeyPress::Down(true));
+            run_invalid_kbd_ll_hook_struct(WM_KEYUP, KeyPress::Up(false));
+            run_invalid_kbd_ll_hook_struct(WM_SYSKEYUP, KeyPress::Up(true));
         }
     }
 }
