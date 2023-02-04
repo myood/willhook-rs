@@ -6,13 +6,17 @@ use std::ptr::null_mut;
 
 use winapi::{shared::{minwindef::*, windef::*}, um::winuser::{CallNextHookEx, KBDLLHOOKSTRUCT, MSLLHOOKSTRUCT, HC_ACTION}};
 
+// In the case of normal compilation, just call CallNextHookEx
 #[cfg(not(test))]
 unsafe fn call_next_hook(hhk: HHOOK, n_code: INT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     CallNextHookEx(hhk, n_code, w_param, l_param)
 }
 
+
+// In the case of tests, use home-made mockfor CallNextHookEx
 #[cfg(test)]
 use std::sync::mpsc::*;
+#[cfg(test)]
 use once_cell::sync::Lazy;
 
 #[cfg(test)]
@@ -68,6 +72,7 @@ mod keyboard_procedure_tests {
 
     unsafe fn assert_call_next_hook_equals(expected:  Result<(usize, i32, usize, isize), std::sync::mpsc::TryRecvError>) {
         let actual = CALL_NEXT_HOOK_CALLS.1.try_recv();
+        assert!(false);
         assert_eq!(expected, actual);
     }
 
@@ -86,6 +91,7 @@ mod keyboard_procedure_tests {
             unsafe {
                 keyboard_procedure(code, w_param, l_param);
                 assert_call_next_hook_equals(Ok((NULL as usize, code, w_param, l_param)));
+                assert_call_next_hook_equals(Err(std::sync::mpsc::TryRecvError::Empty) );
                 assert_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
             }
 
@@ -98,6 +104,7 @@ mod keyboard_procedure_tests {
         let l_param = NULL as LPARAM;
         keyboard_procedure(HC_ACTION, w_param as usize, l_param);
         assert_call_next_hook_equals(Ok((NULL as usize, HC_ACTION, w_param, l_param)) );
+        assert_call_next_hook_equals(Err(std::sync::mpsc::TryRecvError::Empty) );
         assert_input_event_equals(Ok(InputEvent::Keyboard(KeyboardEvent{
             pressed: press,
             key: None,
