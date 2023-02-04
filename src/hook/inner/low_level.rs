@@ -15,6 +15,7 @@ unsafe fn call_next_hook(hhk: HHOOK, n_code: INT, w_param: WPARAM, l_param: LPAR
 // In the case of tests, use home-made mock for CallNextHookEx
 #[cfg(test)]
 use std::sync::Mutex;
+#[cfg(test)]
 use std::sync::mpsc::*;
 #[cfg(test)]
 use once_cell::sync::Lazy;
@@ -158,7 +159,6 @@ pub unsafe extern "system" fn mouse_procedure(
     // without further processing and should return the value returned by CallNextHookEx.
     if code < 0 {
         unsafe {
-            // TODO: hhk param should be registered hook during startup
             return CallNextHookEx(null_mut() as HHOOK, code, wm_mouse_param, win_hook_struct);
         }
     }
