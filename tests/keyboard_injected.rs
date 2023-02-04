@@ -4,6 +4,7 @@
 //! Hence, it is best to invoke below tests in one-time CLI environment.
 //! You may observe it by letters appearing in CLI input after test run finishes, like so:
 //! PS C:\workspace\willhook> cfgklaa
+//! It can become real mess especially if you run tests from GUI program
 
 #[cfg(test)]
 mod keyboard_hook_tests {
@@ -136,4 +137,49 @@ mod keyboard_hook_tests {
         assert!(h.try_recv().is_err());
     }
 
+    #[test]
+    fn multiple_hooks_test() {
+        {
+            Keyboard::F.press();
+            Keyboard::G.click();
+            let h1 = keyboard_hook().unwrap();
+            assert!(h1.try_recv().is_err());
+
+            Keyboard::LeftAlt.press();
+            assert_eq!(h1.try_recv(), a_key(LeftAlt, Down(true)));
+            assert!(h1.try_recv().is_err());
+
+            // These events are received by h1
+            Keyboard::H.press();
+            Keyboard::H.release();
+        }
+
+        {
+            // But H press/release should not be received by h2
+            let h2 = keyboard_hook().unwrap();
+            assert!(h2.try_recv().is_err());
+
+            Keyboard::I.click();
+            assert_eq!(h2.try_recv(), a_key(I, Down(true)));
+            assert_eq!(h2.try_recv(), a_key(I, Up(true)));
+            assert!(h2.try_recv().is_err());
+
+            Keyboard::LeftAlt.release();
+            assert_eq!(h2.try_recv(), a_key(LeftAlt, Up(false)));
+            assert!(h2.try_recv().is_err());
+
+            // This J release is captured by h2, but will not be seen by h3
+            Keyboard::J.release();
+        }
+        let h3 = keyboard_hook().unwrap();
+        assert!(h3.try_recv().is_err());
+        
+        Keyboard::K.click();
+        Keyboard::L.click();        
+        assert_eq!(h3.try_recv(), a_key(K, Down(false)));
+        assert_eq!(h3.try_recv(), a_key(K, Up(false)));
+        assert_eq!(h3.try_recv(), a_key(L, Down(false)));
+        assert_eq!(h3.try_recv(), a_key(L, Up(false)));
+        assert!(h3.try_recv().is_err());
+    }
 }
