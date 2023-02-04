@@ -4,20 +4,38 @@ use crate::hook::inner::GLOBAL_CHANNEL;
 
 use std::ptr::null_mut;
 
-use winapi::{shared::{minwindef::*, windef::*}, um::winuser::{CallNextHookEx, KBDLLHOOKSTRUCT, MSLLHOOKSTRUCT}};
+use winapi::{shared::{minwindef::*, windef::*}, um::winuser::{CallNextHookEx, KBDLLHOOKSTRUCT, MSLLHOOKSTRUCT, HC_ACTION}};
+
+#[cfg(not(test))]
+unsafe fn call_next_hook(hhk: HHOOK, n_code: INT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    CallNextHookEx(hhk, n_code, w_param, l_param)
+}
+
+#[cfg(test)]
+use std::sync::mpsc::*;
+use once_cell::sync::Lazy;
+
+#[cfg(test)]
+static mut CALL_NEXT_HOOK_CALLS: Lazy<(Sender<(usize, INT, WPARAM, LPARAM)>, Receiver<(usize, INT, WPARAM, LPARAM)>)> = Lazy::new(|| { channel() });
+#[cfg(test)]
+unsafe fn call_next_hook(hhk: HHOOK, n_code: INT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    CALL_NEXT_HOOK_CALLS.0.send((hhk as usize, n_code, w_param, l_param));
+    0 as LRESULT
+}
+
 
 pub unsafe extern "system" fn keyboard_procedure(
     code: INT,
     wm_key_code: WPARAM,
     win_hook_struct: LPARAM,
 ) -> LRESULT {
-    // If code is less than zero OR win_hook_struct is NULL,
-    // then the hook procedure
+    // If code is less than zero then the hook procedure
     // must pass the message to the CallNextHookEx function
     // without further processing and should return the value returned by CallNextHookEx.
-    if code < 0 {
-        // TODO: hhk param should be registered hook during startup
-        return CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct);
+    if code != HC_ACTION {
+        // hhk - This parameter (the 1st one) is ignored, according to MSDN
+        // args... - The subsequent parameters are simply forwarded
+        return call_next_hook(null_mut() as HHOOK, code, wm_key_code, win_hook_struct);
     }
 
     let kbd_hook_struct: *mut KBDLLHOOKSTRUCT = win_hook_struct as *mut _;        
@@ -25,7 +43,83 @@ pub unsafe extern "system" fn keyboard_procedure(
 
     let _ignore_error = GLOBAL_CHANNEL.send_keyboard_event(keyboard_event).is_err();
 
-    CallNextHookEx(null_mut() as HHOOK, code, wm_key_code, win_hook_struct)
+    call_next_hook(null_mut() as HHOOK, code, wm_key_code, win_hook_struct)
+}
+
+#[cfg(test)]
+mod keyboard_procedure_tests {
+    use winapi::{shared::{minwindef::{WPARAM, LPARAM, UINT, DWORD}, basetsd::ULONG_PTR, ntdef::NULL}, um::winuser::{WM_KEYDOWN, HC_ACTION, WM_INPUT, WM_SYSKEYDOWN, WM_KEYUP, WM_SYSKEYUP}};
+
+    use crate::hook::event::{InputEvent, KeyPress, KeyboardEvent};
+
+    use super::{keyboard_procedure, CALL_NEXT_HOOK_CALLS};
+    use super::GLOBAL_CHANNEL;
+
+    struct MOCK_KBD_LL_HOOK_STRUCT {
+        vk_code: DWORD,
+        scan_code: DWORD,
+        flags: DWORD,
+        time: DWORD,
+        extra_info: ULONG_PTR,
+    }
+
+    unsafe fn assert_call_next_hook_equals(expected:  (usize, i32, usize, isize)) {
+        let call = CALL_NEXT_HOOK_CALLS.1.try_recv();
+        assert!(call.is_ok());
+        let actual = call.unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    unsafe fn assert_input_event_equals(r: Result<InputEvent, std::sync::mpsc::TryRecvError>) {
+        let ie = GLOBAL_CHANNEL.try_recv();
+        assert_eq!(r, ie);
+    }
+
+    #[test]
+    fn invalid_code() {
+        println!("start test");
+        unsafe {
+            println!("start loop");
+            for ic in i32::MIN..i32::MAX {
+                println!("{}", ic);
+                //if HC_ACTION == ic  { 
+                //    continue;
+                //}
+                let w_param = WM_INPUT as WPARAM;
+                let l_param = NULL as LPARAM;
+                println!("runsut");
+                keyboard_procedure(-1, w_param, l_param);
+                println!("assert1");
+                assert_call_next_hook_equals((NULL as usize, -1, w_param, l_param));
+                println!("assert2");
+                assert_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
+                println!("testdone");
+            }
+        }
+    }
+
+    unsafe fn run_invalid_kbd_ll_hook_struct(w_param: UINT, press: KeyPress) {
+        let w_param = w_param as WPARAM;
+        let l_param = NULL as LPARAM;
+        keyboard_procedure(HC_ACTION, w_param as usize, l_param);
+        assert_call_next_hook_equals((NULL as usize, HC_ACTION, w_param, l_param) );
+        assert_input_event_equals(Ok(InputEvent::Keyboard(KeyboardEvent{
+            pressed: press,
+            key: None,
+            is_injected: None,
+        })));
+        assert_input_event_equals(Err(std::sync::mpsc::TryRecvError::Empty));
+    }
+
+    #[test]
+    fn invalid_kbd_ll_hook_struct() {
+        unsafe {
+            run_invalid_kbd_ll_hook_struct(WM_KEYDOWN, KeyPress::Down(false));
+            run_invalid_kbd_ll_hook_struct(WM_SYSKEYDOWN, KeyPress::Down(true));
+            run_invalid_kbd_ll_hook_struct(WM_KEYUP, KeyPress::Down(false));
+            run_invalid_kbd_ll_hook_struct(WM_SYSKEYUP, KeyPress::Down(true));
+        }
+    }
 }
 
 pub unsafe extern "system" fn mouse_procedure(
