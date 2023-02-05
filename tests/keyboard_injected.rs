@@ -182,4 +182,20 @@ mod keyboard_hook_tests {
         assert_eq!(h3.try_recv(), a_key(L, Up(false)));
         assert!(h3.try_recv().is_err());
     }
+
+    #[test]
+    fn keyboard_hook_does_not_capture_mouse() {
+        let h1 = keyboard_hook().unwrap();
+        assert!(h1.try_recv().is_err());
+
+        use mki::Mouse;
+
+        Mouse::Left.click();
+        Mouse::Right.click();
+        Keyboard::K.click();    
+        Mouse::Left.click();
+        assert_eq!(h1.try_recv(), a_key(K, Down(false)));
+        assert_eq!(h1.try_recv(), a_key(K, Up(false)));
+        assert!(h1.try_recv().is_err());
+    }
 }
