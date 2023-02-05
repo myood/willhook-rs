@@ -19,8 +19,8 @@ In the worst case, it should just return incomplete input event (e.g. with missi
 
 This crate is intended for "read-only" access to hooks. It does not support injecting input events or altering them.
 If you are looking for that kind of functionality, you can give [mki](https://crates.io/crates/mki) a try.
-In comparison, the mki crate supports also Linux, but does not cleanup the low-level hooks (by [unhooking them](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unhookwindowshookex)) and threads behind them (by [joinging with them](https://doc.rust-lang.org/std/thread/struct.JoinHandle.html#method.join)).
-This *may* not be an issue for you. The addition of "injecting" and "altering" input events to [willhook] is a possibility, although it is not top priority.
+In comparison, the mki crate supports also Linux, but does not cleanup the low-level hooks (by [unhooking them](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-unhookwindowshookex)) and threads behind them (by [joinging with them](https://doc.rust-lang.org/std/thread/struct.JoinHandle.html#method.join)). It also looks like mki has incomplete implementation for mouse events, including incorrect implementation of injecting mouse click events (see this crate's mouse tests, where mki is used for cross-validation).
+Above *may* not be an issue for you. The addition of "injecting" and "altering" input events to [willhook] is a possibility, although it is not top priority.
 
 # Warning: The current state
 
@@ -33,7 +33,7 @@ TODO:
 - finish implementation of mouse move and mouse wheel
 - document unsafe code
 - write more tests
-- limit the "pub" between private modules (between "implementation", the public API is well defined I think)
+- create "prelude" with useful exports, events in particular, or re-export events in willhook::*
 - maybe do some "target based" compilation, so that this crate can be included in linux projects also?
 
 # How it works
