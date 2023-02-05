@@ -1,4 +1,4 @@
-# willhook-rs ![CI](https://github.com/github/docs/actions/workflows/rust.yml/badge.svg)
+# willhook-rs ![CI](https://github.com/myood/willhook-rs/actions/workflows/rust.yml/badge.svg)
 Capture all keyboard and mouse input regardless of focus on the active windows desktop
 
 # What this crate provides
