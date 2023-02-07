@@ -26,7 +26,7 @@ Above *may* not be an issue for you. The addition of "injecting" and "altering" 
 
 Currently it supports keyboard events and partially mouse actions (some info in mouse events is missing).
 There are sparse tests, which will grow over time, but keep in mind that the crate is "young".
-Note: the tests should be run with `cargo test -- --test-threads=1` - you can try to figure out why. :-)
+Note: the tests should be run with `cargo test --tests -- --test-threads=1 --include-ignored` - you can try to figure out why. :-)
 *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
 
 TODO:
