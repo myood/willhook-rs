@@ -494,7 +494,7 @@ pub struct Point {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct MouseMoveEvent {
-    point: Point,
+    pub point: Point,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
