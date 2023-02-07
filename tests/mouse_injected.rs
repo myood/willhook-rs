@@ -79,6 +79,8 @@ mod mouse_hook_tests {
                 };
         
                 SendInput(1, &mut input as LPINPUT, std::mem::size_of::<INPUT>() as c_int);
+
+                delay_execution();
                 (x + current_pos.x, y + current_pos.y)
             }
         }
