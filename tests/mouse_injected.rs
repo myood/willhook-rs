@@ -296,12 +296,12 @@ mod mouse_hook_tests {
             assert!(h.try_recv().is_err());
 
             let new_pos = vec![
-                fixme::move_by(10, 10),
+                fixme::move_by(10, 15),
                 fixme::move_by(-10, 10),
-                fixme::move_by(-10, -10),
+                fixme::move_by(-15, -15),
                 fixme::move_by(10, -10),
-                fixme::move_by(1, 0),
-                fixme::move_by(0, 1),
+                fixme::move_by(15, 0),
+                fixme::move_by(0, 10),
             ];
 
             for np in new_pos {
