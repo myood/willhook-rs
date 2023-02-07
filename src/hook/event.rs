@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use std::convert::From;
+use winapi::shared::windef::*;
 use winapi::shared::minwindef::*;
 use winapi::um::winuser::*;
 
@@ -419,7 +420,7 @@ impl MouseEvent {
                 WM_XBUTTONDOWN | WM_XBUTTONUP | WM_XBUTTONDBLCLK => Press(MousePressEvent::new(wm_mouse_param, ms_ll_hook_struct)),
                 
                 // Mouse move
-                WM_MOUSEMOVE => Move(MouseMoveEvent{point: Point{x: 0, y: 0}}),
+                WM_MOUSEMOVE => Move(MouseMoveEvent::new(ms_ll_hook_struct)),
 
                 // Wheel move
                 WM_MOUSEWHEEL | WM_MOUSEHWHEEL => Wheel(MouseWheelEvent {  }),
@@ -488,13 +489,31 @@ pub struct MouseWheelEvent {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct Point {
-    pub x: u64,
-    pub y: u64,
+    pub x: i32,
+    pub y: i32,
+}
+
+impl From<POINT> for Point {
+    fn from(value: POINT) -> Self {
+        Point { x: value.x, y: value.y }
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct MouseMoveEvent {
-    pub point: Point,
+    pub point: Option<Point>,
+}
+
+impl MouseMoveEvent {
+    pub unsafe fn new(ms_ll_hook_struct: *const MSLLHOOKSTRUCT) -> MouseMoveEvent {
+        if ms_ll_hook_struct.is_null() {
+            MouseMoveEvent{ point: None }
+        } else {
+            let msll = &*ms_ll_hook_struct;
+            let pt = msll.pt;
+            MouseMoveEvent{ point: Some(pt.into()) }
+        }
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]

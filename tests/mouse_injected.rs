@@ -26,10 +26,10 @@ mod mouse_hook_tests {
                         is_injected: Some(Injected)}))
     }
 
-    fn a_move(x: i32, y: i32) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
+    fn a_move(an_x: i32, an_y: i32) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         Ok(Mouse(MouseEvent {
             event: Move(MouseMoveEvent{
-                point: Point{x: x as u64, y: y as u64},
+                point: Some(Point{x: an_x, y: an_y}),
             }),
             is_injected: Some(Injected)}))
     }
@@ -38,8 +38,9 @@ mod mouse_hook_tests {
     // It sends incorrect mouse events.
     // These are workarounds for this, and also a timing issue.
     mod fixme {
+        use winapi::shared::windef::{LPPOINT, POINT};
         use winapi::ctypes::c_int;
-        use winapi::um::winuser::{SendInput, MOUSEEVENTF_MOVE, LPINPUT, INPUT, INPUT_u, INPUT_MOUSE, MOUSEINPUT};
+        use winapi::um::winuser::{SendInput, MOUSEEVENTF_MOVE, LPINPUT, INPUT, INPUT_u, INPUT_MOUSE, MOUSEINPUT, GetCursorPos};
 
         pub fn delay_execution() {
             // This test is a race between the thread running the test and the background hook.
@@ -58,24 +59,27 @@ mod mouse_hook_tests {
             delay_execution();
         }
 
-        pub fn move_by(x: i32, y: i32) {
-            let interaction: u32 = MOUSEEVENTF_MOVE;
+        pub fn move_by(x: i32, y: i32) -> (i32, i32) {
             unsafe {
-                let mut input: INPUT_u = std::mem::zeroed();
-                *input.mi_mut() = MOUSEINPUT {
+                let mut current_pos = POINT{ x: 0, y: 0, };
+                GetCursorPos(&mut current_pos);
+
+                let mut inner_input: INPUT_u = std::mem::zeroed();
+                *inner_input.mi_mut() = MOUSEINPUT {
                     dx: x,
                     dy: y,
                     mouseData: 0,
                     time: 0,
-                    dwFlags: interaction,
+                    dwFlags: MOUSEEVENTF_MOVE,
                     dwExtraInfo: 0,
                 };
-                let mut x = INPUT {
+                let mut input = INPUT {
                     type_: INPUT_MOUSE,
-                    u: input,
+                    u: inner_input,
                 };
         
-                SendInput(1, &mut x as LPINPUT, std::mem::size_of::<INPUT>() as c_int);
+                SendInput(1, &mut input as LPINPUT, std::mem::size_of::<INPUT>() as c_int);
+                (x + current_pos.x, y + current_pos.y)
             }
         }
 
@@ -270,16 +274,39 @@ mod mouse_hook_tests {
         use crate::mouse_hook_tests::*;
 
         #[test]
-        fn press_one_mouse_key() {
+        fn move_once() {
             fixme::move_by(10, 10);
 
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
+            let (new_x, new_y) = fixme::move_by(10, 10);
+
+            assert_eq!(h.try_recv(), a_move(new_x, new_y));
+            assert!(h.try_recv().is_err());
+        }
+
+        #[test]
+        fn move_couple_of_times() {
             fixme::move_by(10, 10);
 
-            assert_eq!(h.try_recv(), a_move(10, 10));
+            let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
-        }    
+
+            let new_pos = vec![
+                fixme::move_by(10, 10),
+                fixme::move_by(-10, 10),
+                fixme::move_by(-10, -10),
+                fixme::move_by(10, -10),
+                fixme::move_by(1, 0),
+                fixme::move_by(0, 1),
+            ];
+
+            for np in new_pos {
+                let (new_x, new_y) = np;
+                assert_eq!(h.try_recv(), a_move(new_x, new_y));
+            }
+            assert!(h.try_recv().is_err());
+        }
     }
 }
