@@ -1,4 +1,4 @@
-# willhook-rs
+![Willhook logo](https://github.com/myood/willhook-rs/raw/main/willhook.png)
 
 ![Build](https://github.com/myood/willhook-rs/actions/workflows/build.yml/badge.svg) ![Docs.rs](https://img.shields.io/docsrs/willhook/latest?label=Docs.rs&logo=Docs.rs) ![issues](https://img.shields.io/github/issues/myood/willhook-rs)
 
