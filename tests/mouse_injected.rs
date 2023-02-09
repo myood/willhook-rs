@@ -365,7 +365,7 @@ mod mouse_hook_tests {
             // This test runs on the GitHub CI and tests only if we receive mouse move event
             // Mouse moves behave unpredictably on the GitHub CI (point values mismatch)
             for _ in new_pos {
-                assert_eq!(is_mouse_move(h.try_recv()));
+                assert!(is_mouse_move(h.try_recv()));
             }
             assert!(h.try_recv().is_err());
         }
