@@ -16,21 +16,9 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --release
-  docs:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
     - name: Docs
       run: cargo doc --release
-  ut:
-    needs: build
-    runs-on: windows-latest
-    steps:
-    - name: Unit Tests
+    - name: UT
       run: cargo test --release --lib -- --test-threads=1
-  val:
-    needs: build
-    runs-on: windows-latest
-    steps:
-    - name: Integration tests
+    - name: validation
       run: cargo test --release --test '*' -- --test-threads=1
