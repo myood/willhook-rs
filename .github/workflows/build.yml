@@ -30,5 +30,6 @@ jobs:
   val:
     needs: build
     runs-on: windows-latest
+    steps:
     - name: Integration tests
       run: cargo test --release --test '*' -- --test-threads=1
