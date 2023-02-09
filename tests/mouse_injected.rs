@@ -49,13 +49,25 @@ mod mouse_hook_tests {
         false
     }
 
+    fn a_wheel(wheel: MouseWheel, wheel_direction: MouseWheelDirection) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
+        Ok(Mouse(MouseEvent {
+            event: Wheel(MouseWheelEvent {
+                    wheel: wheel, direction: Some(wheel_direction),
+                }),
+            is_injected: Some(Injected) }))
+    }
+
     // The MKI implementation seems to be buggy at the current version.
     // It sends incorrect mouse events.
     // These are workarounds for this, and also a timing issue.
     mod fixme {
-        use winapi::shared::windef::{POINT};
+        use winapi::shared::windef::POINT;
         use winapi::ctypes::c_int;
-        use winapi::um::winuser::{SendInput, MOUSEEVENTF_MOVE, LPINPUT, INPUT, INPUT_u, INPUT_MOUSE, MOUSEINPUT, GetCursorPos};
+        use winapi::um::winuser::{
+            SendInput, GetCursorPos,
+            MOUSEEVENTF_MOVE, INPUT_MOUSE, MOUSEEVENTF_WHEEL, MOUSEEVENTF_HWHEEL,
+            LPINPUT, INPUT, INPUT_u, MOUSEINPUT, 
+        };
 
         pub fn delay_execution() {
             // This test is a race between the thread running the test and the background hook.
@@ -97,6 +109,47 @@ mod mouse_hook_tests {
 
                 delay_execution();
                 (x + current_pos.x, y + current_pos.y)
+            }
+        }
+
+        pub fn vertical_wheel_forward() {
+            wheel(MOUSEEVENTF_WHEEL,1);
+        }
+
+        pub fn vertical_wheel_backward() {
+            wheel(MOUSEEVENTF_WHEEL, -1);
+        }
+
+        pub fn horizontal_wheel_forward() {
+            wheel(MOUSEEVENTF_HWHEEL,1);
+        }
+
+        pub fn horizontal_wheel_backward() {
+            wheel(MOUSEEVENTF_HWHEEL, -1);
+        }
+
+        fn wheel(w: u32, d: i16) {
+            unsafe {
+                let mut current_pos = POINT{ x: 0, y: 0, };
+                GetCursorPos(&mut current_pos);
+
+                let mut inner_input: INPUT_u = std::mem::zeroed();
+                *inner_input.mi_mut() = MOUSEINPUT {
+                    dx: current_pos.x,
+                    dy: current_pos.y,
+                    mouseData: ((d as i32) << 16) as u32,
+                    time: 0,
+                    dwFlags: w,
+                    dwExtraInfo: 0,
+                };
+                let mut input = INPUT {
+                    type_: INPUT_MOUSE,
+                    u: inner_input,
+                };
+        
+                SendInput(1, &mut input as LPINPUT, std::mem::size_of::<INPUT>() as c_int);
+
+                delay_execution();
             }
         }
 
@@ -367,6 +420,50 @@ mod mouse_hook_tests {
             for _ in new_pos {
                 assert!(is_mouse_move(h.try_recv()));
             }
+            assert!(h.try_recv().is_err());
+        }
+    }
+
+    mod mouse_wheel {
+        use crate::mouse_hook_tests::*;
+
+        #[test]
+        pub fn wheels() {
+            fixme::horizontal_wheel_forward();
+            fixme::horizontal_wheel_backward();
+            fixme::vertical_wheel_forward();
+            fixme::vertical_wheel_backward();
+            
+            let h = willhook().unwrap();
+
+            fixme::vertical_wheel_backward();
+            fixme::vertical_wheel_forward();
+            fixme::horizontal_wheel_forward();
+            fixme::horizontal_wheel_backward();
+
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
+            assert!(h.try_recv().is_err());
+        }
+
+        #[test]
+        pub fn wheels_interleaved_receive() {
+            let h = willhook().unwrap();
+
+            fixme::vertical_wheel_backward();
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert!(h.try_recv().is_err());
+
+            fixme::horizontal_wheel_forward();
+            fixme::horizontal_wheel_backward();
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
+            assert!(h.try_recv().is_err());
+
+            fixme::vertical_wheel_forward();
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
             assert!(h.try_recv().is_err());
         }
     }

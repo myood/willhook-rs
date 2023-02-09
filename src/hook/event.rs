@@ -423,7 +423,7 @@ impl MouseEvent {
                 WM_MOUSEMOVE => Move(MouseMoveEvent::new(ms_ll_hook_struct)),
 
                 // Wheel move
-                WM_MOUSEWHEEL | WM_MOUSEHWHEEL => Wheel(MouseWheelEvent {  }),
+                WM_MOUSEWHEEL | WM_MOUSEHWHEEL => Wheel(MouseWheelEvent::new(wm_mouse_param, ms_ll_hook_struct)),
 
                 _ => Other(wm_mouse_param),
             }
@@ -483,8 +483,70 @@ impl MousePressEvent {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
-pub struct MouseWheelEvent {
+pub enum MouseWheel {
+    Horizontal,
+    Vertical,
+    Unknown(usize),
+}
 
+impl MouseWheel {
+    pub fn new(wm_mouse_param: WPARAM) -> MouseWheel {
+        use MouseWheel::*;
+        match wm_mouse_param.try_into() {
+            Ok(param_u32) => {
+                match param_u32 {
+                    WM_MOUSEWHEEL => Vertical,
+                    WM_MOUSEHWHEEL => Horizontal,
+                    _ => Unknown(wm_mouse_param),
+                }
+            },
+            _ => Unknown(wm_mouse_param),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
+pub enum MouseWheelDirection {
+    Forward,
+    Backward,
+    Unknown(u32),
+}
+
+impl MouseWheelDirection {
+    pub unsafe fn optionally_from(ms_ll_hook_struct: *const MSLLHOOKSTRUCT) -> Option<MouseWheelDirection>{
+        if ms_ll_hook_struct.is_null() {
+            None
+        } else {
+            Some(MouseWheelDirection::new(&*ms_ll_hook_struct))
+        }
+    }
+    
+    fn new(ms_ll_hook_struct: &MSLLHOOKSTRUCT) -> MouseWheelDirection {
+        use MouseWheelDirection::*;
+        let delta = GET_WHEEL_DELTA_WPARAM(ms_ll_hook_struct.mouseData as WPARAM);
+        match delta {
+            _ if delta > 0 => Forward,
+            _ if delta < 0 => Backward,
+            _ => Unknown(ms_ll_hook_struct.mouseData),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
+pub struct MouseWheelEvent {
+    pub wheel: MouseWheel,
+    pub direction: Option<MouseWheelDirection>
+
+}
+
+impl MouseWheelEvent {
+    pub unsafe fn new(wm_mouse_param: WPARAM, ms_ll_hook_struct: *const MSLLHOOKSTRUCT) -> MouseWheelEvent {
+        MouseWheelEvent { 
+            wheel: MouseWheel::new(wm_mouse_param), 
+            direction: MouseWheelDirection::optionally_from(ms_ll_hook_struct)
+        }
+        
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
