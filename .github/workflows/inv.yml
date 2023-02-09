@@ -1,4 +1,4 @@
-name: I&V
+name: Integration & Verification
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  inv:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3

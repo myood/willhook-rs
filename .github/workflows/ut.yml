@@ -1,4 +1,4 @@
-name: UT
+name: Unit Tests
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  ut:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
