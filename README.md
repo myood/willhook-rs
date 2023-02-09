@@ -34,7 +34,6 @@ Note: the tests should be run with `cargo test --tests -- --test-threads=1 --inc
 *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
 
 TODO:
-- finish implementation of mouse move and mouse wheel
 - document unsafe code
 - write more tests
 - create "prelude" with useful exports, events in particular, or re-export events in willhook::*
