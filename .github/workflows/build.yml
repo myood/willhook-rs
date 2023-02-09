@@ -29,5 +29,6 @@ jobs:
       run: cargo test --release --lib -- --test-threads=1
   val:
     needs: build
+    runs-on: windows-latest
     - name: Integration tests
       run: cargo test --release --test '*' -- --test-threads=1
