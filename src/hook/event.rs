@@ -9,7 +9,7 @@ use winapi::um::winuser::*;
 pub enum InputEvent {
     Keyboard(KeyboardEvent),
     Mouse(MouseEvent),
-    Ohter(u32),
+    Other(u32),
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]

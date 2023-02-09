@@ -34,11 +34,26 @@ mod mouse_hook_tests {
             is_injected: Some(Injected)}))
     }
 
+    fn is_mouse_move(r: Result<InputEvent, std::sync::mpsc::TryRecvError>) -> bool {
+        if let Ok(ie) = r {
+            if let Mouse(me) = ie {
+                if let Move(_) = me.event {
+                    return true
+                }
+            }
+            // Assertion to print out the actual value in tests
+            assert_eq!(ie, InputEvent::Other(0));
+        }
+        // Assertion to print out that error was returned
+        assert!(r.is_ok());
+        false
+    }
+
     // The MKI implementation seems to be buggy at the current version.
     // It sends incorrect mouse events.
     // These are workarounds for this, and also a timing issue.
     mod fixme {
-        use winapi::shared::windef::{LPPOINT, POINT};
+        use winapi::shared::windef::{POINT};
         use winapi::ctypes::c_int;
         use winapi::um::winuser::{SendInput, MOUSEEVENTF_MOVE, LPINPUT, INPUT, INPUT_u, INPUT_MOUSE, MOUSEINPUT, GetCursorPos};
 
@@ -292,6 +307,18 @@ mod mouse_hook_tests {
             assert!(h.try_recv().is_err());
         }
 
+        #[test]
+        fn move_once_generates_mouse_move() {
+            fixme::move_by(10, 10);
+
+            let h = mouse_hook().unwrap();
+            assert!(h.try_recv().is_err());
+
+            fixme::move_by(10, 10);
+            assert!(is_mouse_move(h.try_recv()));
+            assert!(h.try_recv().is_err());
+        }
+
         // Mouse move tests do not work properly on the GitHub CI Action.
         // I'm not sure why, because they pass locally.
         // Use `cargo test --tests -- --test-threads=1 --include-ignored` before publish.
@@ -315,6 +342,30 @@ mod mouse_hook_tests {
             for np in new_pos {
                 let (new_x, new_y) = np;
                 assert_eq!(h.try_recv(), a_move(new_x, new_y));
+            }
+            assert!(h.try_recv().is_err());
+        }
+
+        #[test]
+        fn move_couple_of_times_generates_mouse_move() {
+            fixme::move_by(10, 10);
+
+            let h = mouse_hook().unwrap();
+            assert!(h.try_recv().is_err());
+
+            let new_pos = vec![
+                fixme::move_by(10, 15),
+                fixme::move_by(-10, 10),
+                fixme::move_by(-15, -15),
+                fixme::move_by(10, -10),
+                fixme::move_by(15, 0),
+                fixme::move_by(0, 10),
+            ];
+
+            // This test runs on the GitHub CI and tests only if we receive mouse move event
+            // Mouse moves behave unpredictably on the GitHub CI (point values mismatch)
+            for _ in new_pos {
+                assert_eq!(is_mouse_move(h.try_recv()));
             }
             assert!(h.try_recv().is_err());
         }
