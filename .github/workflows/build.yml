@@ -10,11 +10,15 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  tests:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build
-    - name: Run tests
       run: cargo build --release
+    - name: Docs
+      run: cargo doc --release
+    - name: Unit Tests
+      run: cargo test --release --lib -- --test-threads=1
+    - name: Integration tests
+      run: cargo test --release --test '*' -- --test-threads=1
