@@ -19,13 +19,6 @@ mod keyboard_hook_tests {
     use willhook::hook::event::IsKeyboardEventInjected::*;
     use mki::Keyboard;
 
-    fn a_key(key: KeyboardKey, press: KeyPress) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
-        Ok(Keyboard(KeyboardEvent {
-                        pressed: press,
-                        key: Some(key),
-                        is_injected: Some(Injected)}))
-    }
-
     #[test]
     fn press_one_keyboard_key() {
         Keyboard::A.press();
@@ -35,7 +28,7 @@ mod keyboard_hook_tests {
 
         Keyboard::A.press();
 
-        assert_eq!(h.try_recv(), a_key(A, Down(false)));
+        assert_eq!(h.try_recv(), utils::a_key(A, Down(false)));
         assert!(h.try_recv().is_err());
     }    
     
@@ -48,7 +41,7 @@ mod keyboard_hook_tests {
 
         Keyboard::B.release();
 
-        assert_eq!(h.try_recv(), a_key(B, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(B, Up(false)));
         assert!(h.try_recv().is_err());
     }
     
@@ -59,8 +52,8 @@ mod keyboard_hook_tests {
 
         Keyboard::C.click();
 
-        assert_eq!(h.try_recv(), a_key(C, Down(false)));
-        assert_eq!(h.try_recv(), a_key(C, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(C, Down(false)));
+        assert_eq!(h.try_recv(), utils::a_key(C, Up(false)));
         assert!(h.try_recv().is_err());
     }
 
@@ -73,10 +66,10 @@ mod keyboard_hook_tests {
         Keyboard::D.click();
         Keyboard::LeftAlt.release();
 
-        assert_eq!(h.try_recv(), a_key(LeftAlt, Down(true)));
-        assert_eq!(h.try_recv(), a_key(D, Down(true)));
-        assert_eq!(h.try_recv(), a_key(D, Up(true)));
-        assert_eq!(h.try_recv(), a_key(LeftAlt, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(LeftAlt, Down(true)));
+        assert_eq!(h.try_recv(), utils::a_key(D, Down(true)));
+        assert_eq!(h.try_recv(), utils::a_key(D, Up(true)));
+        assert_eq!(h.try_recv(), utils::a_key(LeftAlt, Up(false)));
         assert!(h.try_recv().is_err());
     }
 
@@ -86,17 +79,17 @@ mod keyboard_hook_tests {
         assert!(h.try_recv().is_err());
 
         Keyboard::LeftAlt.press();
-        assert_eq!(h.try_recv(), a_key(LeftAlt, Down(true)));
+        assert_eq!(h.try_recv(), utils::a_key(LeftAlt, Down(true)));
         assert!(h.try_recv().is_err());
 
         Keyboard::E.press();
         Keyboard::E.release();
-        assert_eq!(h.try_recv(), a_key(E, Down(true)));
-        assert_eq!(h.try_recv(), a_key(E, Up(true)));
+        assert_eq!(h.try_recv(), utils::a_key(E, Down(true)));
+        assert_eq!(h.try_recv(), utils::a_key(E, Up(true)));
         assert!(h.try_recv().is_err());
 
         Keyboard::LeftAlt.release();
-        assert_eq!(h.try_recv(), a_key(LeftAlt, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(LeftAlt, Up(false)));
         assert!(h.try_recv().is_err());
 
         assert!(h.try_recv().is_err());
@@ -110,30 +103,30 @@ mod keyboard_hook_tests {
         assert!(h.try_recv().is_err());
 
         Keyboard::LeftAlt.press();
-        assert_eq!(h.try_recv(), a_key(LeftAlt, Down(true)));
+        assert_eq!(h.try_recv(), utils::a_key(LeftAlt, Down(true)));
         assert!(h.try_recv().is_err());
 
         Keyboard::H.press();
         Keyboard::I.click();
         Keyboard::H.release();
-        assert_eq!(h.try_recv(), a_key(H, Down(true)));
-        assert_eq!(h.try_recv(), a_key(I, Down(true)));
-        assert_eq!(h.try_recv(), a_key(I, Up(true)));
-        assert_eq!(h.try_recv(), a_key(H, Up(true)));
+        assert_eq!(h.try_recv(), utils::a_key(H, Down(true)));
+        assert_eq!(h.try_recv(), utils::a_key(I, Down(true)));
+        assert_eq!(h.try_recv(), utils::a_key(I, Up(true)));
+        assert_eq!(h.try_recv(), utils::a_key(H, Up(true)));
         assert!(h.try_recv().is_err());
 
         Keyboard::LeftAlt.release();
-        assert_eq!(h.try_recv(), a_key(LeftAlt, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(LeftAlt, Up(false)));
         assert!(h.try_recv().is_err());
         
         Keyboard::J.release();
         Keyboard::K.click();
         Keyboard::L.click();        
-        assert_eq!(h.try_recv(), a_key(J, Up(false)));
-        assert_eq!(h.try_recv(), a_key(K, Down(false)));
-        assert_eq!(h.try_recv(), a_key(K, Up(false)));
-        assert_eq!(h.try_recv(), a_key(L, Down(false)));
-        assert_eq!(h.try_recv(), a_key(L, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(J, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(K, Down(false)));
+        assert_eq!(h.try_recv(), utils::a_key(K, Up(false)));
+        assert_eq!(h.try_recv(), utils::a_key(L, Down(false)));
+        assert_eq!(h.try_recv(), utils::a_key(L, Up(false)));
         assert!(h.try_recv().is_err());
     }
 
@@ -146,7 +139,7 @@ mod keyboard_hook_tests {
             assert!(h1.try_recv().is_err());
 
             Keyboard::LeftAlt.press();
-            assert_eq!(h1.try_recv(), a_key(LeftAlt, Down(true)));
+            assert_eq!(h1.try_recv(), utils::a_key(LeftAlt, Down(true)));
             assert!(h1.try_recv().is_err());
 
             // These events are received by h1
@@ -160,12 +153,12 @@ mod keyboard_hook_tests {
             assert!(h2.try_recv().is_err());
 
             Keyboard::I.click();
-            assert_eq!(h2.try_recv(), a_key(I, Down(true)));
-            assert_eq!(h2.try_recv(), a_key(I, Up(true)));
+            assert_eq!(h2.try_recv(), utils::a_key(I, Down(true)));
+            assert_eq!(h2.try_recv(), utils::a_key(I, Up(true)));
             assert!(h2.try_recv().is_err());
 
             Keyboard::LeftAlt.release();
-            assert_eq!(h2.try_recv(), a_key(LeftAlt, Up(false)));
+            assert_eq!(h2.try_recv(), utils::a_key(LeftAlt, Up(false)));
             assert!(h2.try_recv().is_err());
 
             // This J release is captured by h2, but will not be seen by h3
@@ -176,10 +169,10 @@ mod keyboard_hook_tests {
         
         Keyboard::K.click();
         Keyboard::L.click();        
-        assert_eq!(h3.try_recv(), a_key(K, Down(false)));
-        assert_eq!(h3.try_recv(), a_key(K, Up(false)));
-        assert_eq!(h3.try_recv(), a_key(L, Down(false)));
-        assert_eq!(h3.try_recv(), a_key(L, Up(false)));
+        assert_eq!(h3.try_recv(), utils::a_key(K, Down(false)));
+        assert_eq!(h3.try_recv(), utils::a_key(K, Up(false)));
+        assert_eq!(h3.try_recv(), utils::a_key(L, Down(false)));
+        assert_eq!(h3.try_recv(), utils::a_key(L, Up(false)));
         assert!(h3.try_recv().is_err());
     }
 
@@ -194,8 +187,8 @@ mod keyboard_hook_tests {
         Mouse::Right.click();
         Keyboard::K.click();    
         Mouse::Left.click();
-        assert_eq!(h1.try_recv(), a_key(K, Down(false)));
-        assert_eq!(h1.try_recv(), a_key(K, Up(false)));
+        assert_eq!(h1.try_recv(), utils::a_key(K, Down(false)));
+        assert_eq!(h1.try_recv(), utils::a_key(K, Up(false)));
         assert!(h1.try_recv().is_err());
     }
 }

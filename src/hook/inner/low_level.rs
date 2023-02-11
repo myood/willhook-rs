@@ -75,7 +75,7 @@ mod keyboard_procedure_tests {
         scan_code: DWORD,
         flags: DWORD,
         time: DWORD,
-        extra_info: ULONG_PTR,
+        a_info: ULONG_PTR,
     }
 
     unsafe fn assert_call_next_hook_called_once(expected: (usize, i32, usize, isize)) {

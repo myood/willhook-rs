@@ -17,175 +17,32 @@ mod mouse_hook_tests {
     use willhook::hook::event::MouseEventType::*;
     use mki::Mouse;
 
-    fn a_button(button: MouseButton, press: MouseButtonPress) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
-        Ok(Mouse(MouseEvent {
-                        event: Press(MousePressEvent{
-                            pressed: press,
-                            button: button,
-                        }),
-                        is_injected: Some(Injected)}))
-    }
-
-    fn a_move(an_x: i32, an_y: i32) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
-        Ok(Mouse(MouseEvent {
-            event: Move(MouseMoveEvent{
-                point: Some(Point{x: an_x, y: an_y}),
-            }),
-            is_injected: Some(Injected)}))
-    }
-
-    fn is_mouse_move(r: Result<InputEvent, std::sync::mpsc::TryRecvError>) -> bool {
-        if let Ok(ie) = r {
-            if let Mouse(me) = ie {
-                if let Move(_) = me.event {
-                    return true
-                }
-            }
-            // Assertion to print out the actual value in tests
-            assert_eq!(ie, InputEvent::Other(0));
-        }
-        // Assertion to print out that error was returned
-        assert!(r.is_ok());
-        false
-    }
-
-    fn a_wheel(wheel: MouseWheel, wheel_direction: MouseWheelDirection) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
-        Ok(Mouse(MouseEvent {
-            event: Wheel(MouseWheelEvent {
-                    wheel: wheel, direction: Some(wheel_direction),
-                }),
-            is_injected: Some(Injected) }))
-    }
-
-    // The MKI implementation seems to be buggy at the current version.
-    // It sends incorrect mouse events.
-    // These are workarounds for this, and also a timing issue.
-    mod fixme {
-        use winapi::shared::windef::POINT;
-        use winapi::ctypes::c_int;
-        use winapi::um::winuser::{
-            SendInput, GetCursorPos,
-            MOUSEEVENTF_MOVE, INPUT_MOUSE, MOUSEEVENTF_WHEEL, MOUSEEVENTF_HWHEEL,
-            LPINPUT, INPUT, INPUT_u, MOUSEINPUT, 
-        };
-
-        pub fn delay_execution() {
-            // This test is a race between the thread running the test and the background hook.
-            // I don't see a good way around that for now, other then sleeping and yielding the injecter thread.
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            std::thread::yield_now();
-        }
-
-        pub fn press(m: mki::Mouse) {
-            m.release();
-            delay_execution();
-        }
-
-        pub fn release(m: mki::Mouse) {
-            m.click();
-            delay_execution();
-        }
-
-        pub fn move_by(x: i32, y: i32) -> (i32, i32) {
-            unsafe {
-                let mut current_pos = POINT{ x: 0, y: 0, };
-                GetCursorPos(&mut current_pos);
-
-                let mut inner_input: INPUT_u = std::mem::zeroed();
-                *inner_input.mi_mut() = MOUSEINPUT {
-                    dx: x,
-                    dy: y,
-                    mouseData: 0,
-                    time: 0,
-                    dwFlags: MOUSEEVENTF_MOVE,
-                    dwExtraInfo: 0,
-                };
-                let mut input = INPUT {
-                    type_: INPUT_MOUSE,
-                    u: inner_input,
-                };
-        
-                SendInput(1, &mut input as LPINPUT, std::mem::size_of::<INPUT>() as c_int);
-
-                delay_execution();
-                (x + current_pos.x, y + current_pos.y)
-            }
-        }
-
-        pub fn vertical_wheel_forward() {
-            wheel(MOUSEEVENTF_WHEEL,1);
-        }
-
-        pub fn vertical_wheel_backward() {
-            wheel(MOUSEEVENTF_WHEEL, -1);
-        }
-
-        pub fn horizontal_wheel_forward() {
-            wheel(MOUSEEVENTF_HWHEEL,1);
-        }
-
-        pub fn horizontal_wheel_backward() {
-            wheel(MOUSEEVENTF_HWHEEL, -1);
-        }
-
-        fn wheel(w: u32, d: i16) {
-            unsafe {
-                let mut current_pos = POINT{ x: 0, y: 0, };
-                GetCursorPos(&mut current_pos);
-
-                let mut inner_input: INPUT_u = std::mem::zeroed();
-                *inner_input.mi_mut() = MOUSEINPUT {
-                    dx: current_pos.x,
-                    dy: current_pos.y,
-                    mouseData: ((d as i32) << 16) as u32,
-                    time: 0,
-                    dwFlags: w,
-                    dwExtraInfo: 0,
-                };
-                let mut input = INPUT {
-                    type_: INPUT_MOUSE,
-                    u: inner_input,
-                };
-        
-                SendInput(1, &mut input as LPINPUT, std::mem::size_of::<INPUT>() as c_int);
-
-                delay_execution();
-            }
-        }
-
-        pub fn click(m: mki::Mouse) {
-            press(m);
-            release(m);
-        }
-    }
-
-
     mod mouse_clicks {
         use crate::mouse_hook_tests::*;
 
         #[test]
         fn press_one_mouse_key() {
-            fixme::press(Mouse::Left);
+            utils::fixme::press(Mouse::Left);
 
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            fixme::press(Mouse::Left);
+            utils::fixme::press(Mouse::Left);
 
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Down));
             assert!(h.try_recv().is_err());
         }    
         
         #[test]
         fn release_one_mouse_key() {
-            fixme::release(Mouse::Left);
+            utils::fixme::release(Mouse::Left);
         
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            fixme::release(Mouse::Left);
+            utils::fixme::release(Mouse::Left);
 
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
             assert!(h.try_recv().is_err());
         }
         
@@ -194,10 +51,10 @@ mod mouse_hook_tests {
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            fixme::click(Mouse::Left);
+            utils::fixme::click(Mouse::Left);
 
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
             assert!(h.try_recv().is_err());
         }
 
@@ -206,14 +63,14 @@ mod mouse_hook_tests {
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            fixme::press(Mouse::Right);
-            fixme::click(Mouse::Left);
-            fixme::release(Mouse::Right);
+            utils::fixme::press(Mouse::Right);
+            utils::fixme::click(Mouse::Left);
+            utils::fixme::release(Mouse::Right);
 
-            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
-            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_button(Right(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_button(Right(SingleClick), Up));
             assert!(h.try_recv().is_err());
         }
 
@@ -222,18 +79,18 @@ mod mouse_hook_tests {
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            fixme::press(Mouse::Right);
-            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Down));
+            utils::fixme::press(Mouse::Right);
+            assert_eq!(h.try_recv(), utils::a_button(Right(SingleClick), Down));
             assert!(h.try_recv().is_err());
 
-            fixme::press(Mouse::Left);
-            fixme::release(Mouse::Left);
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
+            utils::fixme::press(Mouse::Left);
+            utils::fixme::release(Mouse::Left);
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
             assert!(h.try_recv().is_err());
 
-            fixme::release(Mouse::Right);
-            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Up));
+            utils::fixme::release(Mouse::Right);
+            assert_eq!(h.try_recv(), utils::a_button(Right(SingleClick), Up));
             assert!(h.try_recv().is_err());
 
             assert!(h.try_recv().is_err());
@@ -241,54 +98,54 @@ mod mouse_hook_tests {
 
         #[test]
         fn multiple_buttons() {        
-            fixme::press(Mouse::Left);
-            fixme::click(Mouse::Right);
+            utils::fixme::press(Mouse::Left);
+            utils::fixme::click(Mouse::Right);
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            fixme::press(Mouse::Left);
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
+            utils::fixme::press(Mouse::Left);
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Down));
             assert!(h.try_recv().is_err());
 
-            fixme::press(Mouse::Right);
-            fixme::click(Mouse::Middle);
-            fixme::release(Mouse::Left);
-            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Middle(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Middle(SingleClick), Up));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
+            utils::fixme::press(Mouse::Right);
+            utils::fixme::click(Mouse::Middle);
+            utils::fixme::release(Mouse::Left);
+            assert_eq!(h.try_recv(), utils::a_button(Right(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Middle(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Middle(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
             assert!(h.try_recv().is_err());
 
-            fixme::release(Mouse::Extra);
-            assert_eq!(h.try_recv(), a_button(X2(SingleClick), Up));
+            utils::fixme::release(Mouse::Extra);
+            assert_eq!(h.try_recv(), utils::a_button(X2(SingleClick), Up));
             assert!(h.try_recv().is_err());
             
-            fixme::release(Mouse::Side);
-            fixme::click(Mouse::Left);
-            fixme::click(Mouse::Extra);
-            assert_eq!(h.try_recv(), a_button(X1(SingleClick), Up));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
-            assert_eq!(h.try_recv(), a_button(X2(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(X2(SingleClick), Up));
+            utils::fixme::release(Mouse::Side);
+            utils::fixme::click(Mouse::Left);
+            utils::fixme::click(Mouse::Extra);
+            assert_eq!(h.try_recv(), utils::a_button(X1(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_button(X2(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(X2(SingleClick), Up));
             assert!(h.try_recv().is_err());
         }
 
         #[test]
         fn multiple_hooks_test() {
             {
-                fixme::press(Mouse::Left);
-                fixme::click(Mouse::Left);
+                utils::fixme::press(Mouse::Left);
+                utils::fixme::click(Mouse::Left);
                 let h1 = mouse_hook().unwrap();
                 assert!(h1.try_recv().is_err());
 
-                fixme::press(Mouse::Left);
-                assert_eq!(h1.try_recv(), a_button(Left(SingleClick), Down));
+                utils::fixme::press(Mouse::Left);
+                assert_eq!(h1.try_recv(), utils::a_button(Left(SingleClick), Down));
                 assert!(h1.try_recv().is_err());
 
                 // These events are received by h1
-                fixme::press(Mouse::Left);
-                fixme::release(Mouse::Left);
+                utils::fixme::press(Mouse::Left);
+                utils::fixme::release(Mouse::Left);
             }
 
             {
@@ -296,27 +153,27 @@ mod mouse_hook_tests {
                 let h2 = mouse_hook().unwrap();
                 assert!(h2.try_recv().is_err());
 
-                fixme::click(Mouse::Left);
-                assert_eq!(h2.try_recv(), a_button(Left(SingleClick), Down));
-                assert_eq!(h2.try_recv(), a_button(Left(SingleClick), Up));
+                utils::fixme::click(Mouse::Left);
+                assert_eq!(h2.try_recv(), utils::a_button(Left(SingleClick), Down));
+                assert_eq!(h2.try_recv(), utils::a_button(Left(SingleClick), Up));
                 assert!(h2.try_recv().is_err());
 
-                fixme::release(Mouse::Right);
-                assert_eq!(h2.try_recv(), a_button(Right(SingleClick), Up));
+                utils::fixme::release(Mouse::Right);
+                assert_eq!(h2.try_recv(), utils::a_button(Right(SingleClick), Up));
                 assert!(h2.try_recv().is_err());
 
                 // This J release is captured by h2, but will not be seen by h3
-                fixme::release(Mouse::Left);
+                utils::fixme::release(Mouse::Left);
             }
             let h3 = mouse_hook().unwrap();
             assert!(h3.try_recv().is_err());
             
-            fixme::click(Mouse::Left);
-            fixme::click(Mouse::Right);        
-            assert_eq!(h3.try_recv(), a_button(Left(SingleClick), Down));
-            assert_eq!(h3.try_recv(), a_button(Left(SingleClick), Up));
-            assert_eq!(h3.try_recv(), a_button(Right(SingleClick), Down));
-            assert_eq!(h3.try_recv(), a_button(Right(SingleClick), Up));
+            utils::fixme::click(Mouse::Left);
+            utils::fixme::click(Mouse::Right);        
+            assert_eq!(h3.try_recv(), utils::a_button(Left(SingleClick), Down));
+            assert_eq!(h3.try_recv(), utils::a_button(Left(SingleClick), Up));
+            assert_eq!(h3.try_recv(), utils::a_button(Right(SingleClick), Down));
+            assert_eq!(h3.try_recv(), utils::a_button(Right(SingleClick), Up));
             assert!(h3.try_recv().is_err());
         }
 
@@ -329,13 +186,13 @@ mod mouse_hook_tests {
 
             Keyboard::A.click();
             Keyboard::B.click();
-            fixme::click(Mouse::Left);    
+            utils::fixme::click(Mouse::Left);    
             Keyboard::C.click();
 
-            fixme::delay_execution();
+            utils::fixme::delay_execution();
 
-            assert_eq!(h1.try_recv(), a_button(Left(SingleClick), Down));
-            assert_eq!(h1.try_recv(), a_button(Left(SingleClick), Up));
+            assert_eq!(h1.try_recv(), utils::a_button(Left(SingleClick), Down));
+            assert_eq!(h1.try_recv(), utils::a_button(Left(SingleClick), Up));
             assert!(h1.try_recv().is_err());
         }
     }
@@ -349,76 +206,76 @@ mod mouse_hook_tests {
         #[ignore]
         #[test]
         fn move_once() {
-            fixme::move_by(10, 10);
+            utils::fixme::move_by(10, 10);
 
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            let (new_x, new_y) = fixme::move_by(10, 10);
+            let (new_x, new_y) = utils::fixme::move_by(10, 10);
 
-            assert_eq!(h.try_recv(), a_move(new_x, new_y));
+            assert_eq!(h.try_recv(), utils::a_move(new_x, new_y));
             assert!(h.try_recv().is_err());
         }
 
         #[test]
         fn move_once_generates_mouse_move() {
-            fixme::move_by(10, 10);
+            utils::fixme::move_by(10, 10);
 
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
-            fixme::move_by(10, 10);
-            assert!(is_mouse_move(h.try_recv()));
+            utils::fixme::move_by(10, 10);
+            assert!(utils::is_mouse_move(h.try_recv()));
             assert!(h.try_recv().is_err());
         }
 
-        // Mouse move tests do not work properly on the GitHub CI Action.
+        // Mouse move tests do not work properly on the GitHub CI Action.S
         // I'm not sure why, because they pass locally.
         // Use `cargo test --tests -- --test-threads=1 --include-ignored` before publish.
         #[ignore]
         #[test]
         fn move_couple_of_times() {
-            fixme::move_by(10, 10);
+            utils::fixme::move_by(10, 10);
 
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
             let new_pos = vec![
-                fixme::move_by(10, 15),
-                fixme::move_by(-10, 10),
-                fixme::move_by(-15, -15),
-                fixme::move_by(10, -10),
-                fixme::move_by(15, 0),
-                fixme::move_by(0, 10),
+                utils::fixme::move_by(10, 15),
+                utils::fixme::move_by(-10, 10),
+                utils::fixme::move_by(-15, -15),
+                utils::fixme::move_by(10, -10),
+                utils::fixme::move_by(15, 0),
+                utils::fixme::move_by(0, 10),
             ];
 
             for np in new_pos {
                 let (new_x, new_y) = np;
-                assert_eq!(h.try_recv(), a_move(new_x, new_y));
+                assert_eq!(h.try_recv(), utils::a_move(new_x, new_y));
             }
             assert!(h.try_recv().is_err());
         }
 
         #[test]
         fn move_couple_of_times_generates_mouse_move() {
-            fixme::move_by(10, 10);
+            utils::fixme::move_by(10, 10);
 
             let h = mouse_hook().unwrap();
             assert!(h.try_recv().is_err());
 
             let new_pos = vec![
-                fixme::move_by(10, 15),
-                fixme::move_by(-10, 10),
-                fixme::move_by(-15, -15),
-                fixme::move_by(10, -10),
-                fixme::move_by(15, 0),
-                fixme::move_by(0, 10),
+                utils::fixme::move_by(10, 15),
+                utils::fixme::move_by(-10, 10),
+                utils::fixme::move_by(-15, -15),
+                utils::fixme::move_by(10, -10),
+                utils::fixme::move_by(15, 0),
+                utils::fixme::move_by(0, 10),
             ];
 
             // This test runs on the GitHub CI and tests only if we receive mouse move event
             // Mouse moves behave unpredictably on the GitHub CI (point values mismatch)
             for _ in new_pos {
-                assert!(is_mouse_move(h.try_recv()));
+                assert!(utils::is_mouse_move(h.try_recv()));
             }
             assert!(h.try_recv().is_err());
         }
@@ -429,22 +286,22 @@ mod mouse_hook_tests {
 
         #[test]
         pub fn wheels() {
-            fixme::horizontal_wheel_forward();
-            fixme::horizontal_wheel_backward();
-            fixme::vertical_wheel_forward();
-            fixme::vertical_wheel_backward();
+            utils::fixme::horizontal_wheel_forward();
+            utils::fixme::horizontal_wheel_backward();
+            utils::fixme::vertical_wheel_forward();
+            utils::fixme::vertical_wheel_backward();
             
             let h = willhook().unwrap();
 
-            fixme::vertical_wheel_backward();
-            fixme::vertical_wheel_forward();
-            fixme::horizontal_wheel_forward();
-            fixme::horizontal_wheel_backward();
+            utils::fixme::vertical_wheel_backward();
+            utils::fixme::vertical_wheel_forward();
+            utils::fixme::horizontal_wheel_forward();
+            utils::fixme::horizontal_wheel_backward();
 
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
             assert!(h.try_recv().is_err());
         }
 
@@ -452,18 +309,18 @@ mod mouse_hook_tests {
         pub fn wheels_interleaved_receive() {
             let h = willhook().unwrap();
 
-            fixme::vertical_wheel_backward();
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            utils::fixme::vertical_wheel_backward();
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
             assert!(h.try_recv().is_err());
 
-            fixme::horizontal_wheel_forward();
-            fixme::horizontal_wheel_backward();
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
+            utils::fixme::horizontal_wheel_forward();
+            utils::fixme::horizontal_wheel_backward();
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
             assert!(h.try_recv().is_err());
 
-            fixme::vertical_wheel_forward();
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
+            utils::fixme::vertical_wheel_forward();
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
             assert!(h.try_recv().is_err());
         }
     }
@@ -475,42 +332,51 @@ mod mouse_hook_tests {
         pub fn mixed_mouse_inputs() {            
             let h = willhook().unwrap();
 
-            fixme::vertical_wheel_backward();
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            utils::fixme::vertical_wheel_backward();
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
             assert!(h.try_recv().is_err());
 
-            fixme::vertical_wheel_backward();
-            fixme::move_by(10, 15);
-            fixme::vertical_wheel_forward();
-            fixme::horizontal_wheel_forward();
-            fixme::move_by(-10, 10);
-            fixme::click(Mouse::Middle);
-            fixme::move_by(-15, -15);
-            fixme::move_by(10, -10);
-            fixme::horizontal_wheel_backward();
-            fixme::press(Mouse::Right);
-            fixme::move_by(15, 0);
-            fixme::release(Mouse::Right);
-            fixme::move_by(0, 10);
-            fixme::press(Mouse::Left);
-            fixme::release(Mouse::Left);
+            utils::fixme::vertical_wheel_backward();
+            utils::fixme::move_by(10, 15);
+            utils::fixme::vertical_wheel_forward();
+            utils::fixme::horizontal_wheel_forward();
+            utils::fixme::move_by(-10, 10);
+            utils::fixme::click(Mouse::Middle);
+            utils::fixme::move_by(-15, -15);
+            utils::fixme::move_by(10, -10);
+            utils::fixme::horizontal_wheel_backward();
+            utils::fixme::press(Mouse::Right);
+            utils::fixme::move_by(15, 0);
+            utils::fixme::release(Mouse::Right);
+            utils::fixme::move_by(0, 10);
+            utils::fixme::press(Mouse::Left);
+            utils::fixme::release(Mouse::Left);
 
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
-            assert!(is_mouse_move(h.try_recv()));
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
-            assert!(is_mouse_move(h.try_recv()));
-            assert_eq!(h.try_recv(), a_button(Middle(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Middle(SingleClick), Up));
-            assert!(is_mouse_move(h.try_recv()));
-            assert!(is_mouse_move(h.try_recv()));
-            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
-            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Down));
-            assert!(is_mouse_move(h.try_recv()));
-            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Up));
-            assert!(is_mouse_move(h.try_recv()));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
-            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert!(utils::is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
+            assert!(utils::is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), utils::a_button(Middle(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Middle(SingleClick), Up));
+            assert!(utils::is_mouse_move(h.try_recv()));
+            assert!(utils::is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
+            assert_eq!(h.try_recv(), utils::a_button(Right(SingleClick), Down));
+            assert!(utils::is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), utils::a_button(Right(SingleClick), Up));
+            assert!(utils::is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Down));
+            assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
+            assert!(h.try_recv().is_err());
+
+            
+            utils::fixme::vertical_wheel_backward();
+            utils::fixme::vertical_wheel_backward();
+            utils::fixme::vertical_wheel_backward();
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
             assert!(h.try_recv().is_err());
         }
     }
