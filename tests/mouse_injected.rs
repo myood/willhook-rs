@@ -9,13 +9,10 @@
 mod mouse_hook_tests {
     use willhook::*;
     use willhook::hook::event::*;
-    use willhook::hook::event::InputEvent::*;
     use willhook::hook::event::MouseButtonPress::*;
     use willhook::hook::event::MouseButton::*;
     use willhook::hook::event::MouseClick::*;
-    use willhook::hook::event::IsMouseEventInjected::*;
-    use willhook::hook::event::MouseEventType::*;
-    use mki::Mouse;
+    use mki::{Keyboard, Mouse};
 
     mod mouse_clicks {
         use crate::mouse_hook_tests::*;
@@ -330,23 +327,27 @@ mod mouse_hook_tests {
 
         #[test]
         pub fn mixed_mouse_inputs() {            
-            let h = willhook().unwrap();
+            let h = mouse_hook().unwrap();
 
             utils::fixme::vertical_wheel_backward();
             assert_eq!(h.try_recv(), utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
             assert!(h.try_recv().is_err());
 
+            Keyboard::A.click();
             utils::fixme::vertical_wheel_backward();
             utils::fixme::move_by(10, 15);
             utils::fixme::vertical_wheel_forward();
+            Keyboard::B.click();
             utils::fixme::horizontal_wheel_forward();
             utils::fixme::move_by(-10, 10);
             utils::fixme::click(Mouse::Middle);
             utils::fixme::move_by(-15, -15);
+            Keyboard::C.click();
             utils::fixme::move_by(10, -10);
             utils::fixme::horizontal_wheel_backward();
             utils::fixme::press(Mouse::Right);
             utils::fixme::move_by(15, 0);
+            Keyboard::C.click();
             utils::fixme::release(Mouse::Right);
             utils::fixme::move_by(0, 10);
             utils::fixme::press(Mouse::Left);
@@ -370,7 +371,6 @@ mod mouse_hook_tests {
             assert_eq!(h.try_recv(), utils::a_button(Left(SingleClick), Up));
             assert!(h.try_recv().is_err());
 
-            
             utils::fixme::vertical_wheel_backward();
             utils::fixme::vertical_wheel_backward();
             utils::fixme::vertical_wheel_backward();

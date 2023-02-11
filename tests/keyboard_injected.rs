@@ -9,14 +9,8 @@
 #[cfg(test)]
 mod keyboard_hook_tests {
     use willhook::*;
-    use willhook::hook::event::InputEvent;
-    use willhook::hook::event::KeyPress;
-    use willhook::hook::event::KeyboardEvent;
-    use willhook::hook::event::InputEvent::*;
     use willhook::hook::event::KeyPress::*;
-    use willhook::hook::event::KeyboardKey;
     use willhook::hook::event::KeyboardKey::*;
-    use willhook::hook::event::IsKeyboardEventInjected::*;
     use mki::Keyboard;
 
     #[test]
