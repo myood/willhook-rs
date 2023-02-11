@@ -467,4 +467,51 @@ mod mouse_hook_tests {
             assert!(h.try_recv().is_err());
         }
     }
+
+    mod mixed {
+        use crate::mouse_hook_tests::*;
+
+        #[test]
+        pub fn mixed_mouse_inputs() {            
+            let h = willhook().unwrap();
+
+            fixme::vertical_wheel_backward();
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert!(h.try_recv().is_err());
+
+            fixme::vertical_wheel_backward();
+            fixme::move_by(10, 15);
+            fixme::vertical_wheel_forward();
+            fixme::horizontal_wheel_forward();
+            fixme::move_by(-10, 10);
+            fixme::click(Mouse::Middle);
+            fixme::move_by(-15, -15);
+            fixme::move_by(10, -10);
+            fixme::horizontal_wheel_backward();
+            fixme::press(Mouse::Right);
+            fixme::move_by(15, 0);
+            fixme::release(Mouse::Right);
+            fixme::move_by(0, 10);
+            fixme::press(Mouse::Left);
+            fixme::release(Mouse::Left);
+
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward));
+            assert!(is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Vertical, MouseWheelDirection::Forward));
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward));
+            assert!(is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), a_button(Middle(SingleClick), Down));
+            assert_eq!(h.try_recv(), a_button(Middle(SingleClick), Up));
+            assert!(is_mouse_move(h.try_recv()));
+            assert!(is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Backward));
+            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Down));
+            assert!(is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), a_button(Right(SingleClick), Up));
+            assert!(is_mouse_move(h.try_recv()));
+            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Down));
+            assert_eq!(h.try_recv(), a_button(Left(SingleClick), Up));
+            assert!(h.try_recv().is_err());
+        }
+    }
 }
