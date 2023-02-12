@@ -23,7 +23,7 @@
 //! 
 //! # Warning: The current state
 //! 
-//! Currently it supports mouse and keyboard actions to some extent, see [hook::event] module for details.
+//! Currently it supports mouse and keyboard actions to some extent, see [event] module for details.
 //! There are sparse tests, which will grow over time, but keep in mind that the crate is "young".
 //! Note: the tests should be run with `cargo test --tests -- --test-threads=1 --include-ignored` - you can try to figure out why. :-)
 //! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
@@ -60,6 +60,7 @@ pub mod event;
 
 pub use hook::Hook;
 pub use hook::HookBuilder;
+pub use event::*;
 
 /// Return the Keyboard Hook handle. For more details see [Hook] and [HookBuilder]
 pub fn keyboard_hook() -> Option<Hook> {

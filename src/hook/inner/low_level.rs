@@ -141,10 +141,11 @@ mod keyboard_procedure_tests {
     #[test]
     fn invalid_kbd_ll_hook_struct() {
         unsafe {
-            run_invalid_kbd_ll_hook_struct(WM_KEYDOWN, KeyPress::Down(false));
-            run_invalid_kbd_ll_hook_struct(WM_SYSKEYDOWN, KeyPress::Down(true));
-            run_invalid_kbd_ll_hook_struct(WM_KEYUP, KeyPress::Up(false));
-            run_invalid_kbd_ll_hook_struct(WM_SYSKEYUP, KeyPress::Up(true));
+            use crate::event::IsSystemKeyPress::*;
+            run_invalid_kbd_ll_hook_struct(WM_KEYDOWN, KeyPress::Down(Normal));
+            run_invalid_kbd_ll_hook_struct(WM_SYSKEYDOWN, KeyPress::Down(System));
+            run_invalid_kbd_ll_hook_struct(WM_KEYUP, KeyPress::Up(Normal));
+            run_invalid_kbd_ll_hook_struct(WM_SYSKEYUP, KeyPress::Up(System));
         }
     }
 }

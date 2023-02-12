@@ -8,7 +8,6 @@
 #[cfg(test)]
 mod mouse_hook_tests {
     use willhook::*;
-    use willhook::event::*;
     use willhook::event::MouseButtonPress::*;
     use willhook::event::MouseButton::*;
     use willhook::event::MouseClick::*;
