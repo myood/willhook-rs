@@ -2,10 +2,8 @@ pub(super) mod raw;
 pub(super) mod channels;
 pub(super) mod low_level;
 
-use crate::hook::{
-    event::*,
-    inner::{raw::RawHook, channels::HookChannels}
-};
+use crate::hook::inner::{raw::RawHook, channels::HookChannels};
+use crate::event::*;
 
 use std::{
     thread::JoinHandle,

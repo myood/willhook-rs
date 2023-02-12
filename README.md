@@ -55,7 +55,7 @@ When the [hook::Hook] goes out of scope, the underlying resources supporting low
 - all pending events are dropped (background channels are drained)
 
 When the [hook::Hook] is active (in scope / not dropped). 
-Then one can receive recorded [hook::event::InputEvent]s via [hook::Hook::try_recv].
+Then one can receive recorded [event::InputEvent]s via [hook::Hook::try_recv].
 It works similiarly to [std::sync::mpsc::Receiver::try_recv].
 
 # Quick example

@@ -1,6 +1,6 @@
-use willhook::hook::event::*;
-use willhook::hook::event::InputEvent::*;
-use willhook::hook::event::MouseEventType::*;
+use willhook::event::*;
+use willhook::event::InputEvent::*;
+use willhook::event::MouseEventType::*;
 
 pub fn a_key(key: KeyboardKey, press: KeyPress) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
     Ok(Keyboard(KeyboardEvent {

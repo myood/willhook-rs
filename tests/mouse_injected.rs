@@ -8,10 +8,10 @@
 #[cfg(test)]
 mod mouse_hook_tests {
     use willhook::*;
-    use willhook::hook::event::*;
-    use willhook::hook::event::MouseButtonPress::*;
-    use willhook::hook::event::MouseButton::*;
-    use willhook::hook::event::MouseClick::*;
+    use willhook::event::*;
+    use willhook::event::MouseButtonPress::*;
+    use willhook::event::MouseButton::*;
+    use willhook::event::MouseClick::*;
     use mki::{Keyboard, Mouse};
 
     mod mouse_clicks {

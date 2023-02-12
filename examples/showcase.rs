@@ -16,7 +16,11 @@ fn main() {
 
     while is_running.load(Ordering::SeqCst) {
         if let Ok(ie) = h.try_recv() {
-            println!("Input event: {:?}", ie);
+            match ie {
+                willhook::event::InputEvent::Keyboard(ke) => println!("{:?}", ke),
+                willhook::event::InputEvent::Mouse(me) => println!("{:?}", me),
+                _ => println!("Input event: {:?}", ie),
+            }
         } else {
             std::thread::yield_now();   
         }

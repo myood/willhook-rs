@@ -1,5 +1,5 @@
 
-use crate::hook::event::*;
+use crate::event::*;
 use crate::hook::inner::GLOBAL_CHANNEL;
 
 use std::ptr::null_mut;
@@ -63,7 +63,7 @@ mod keyboard_procedure_tests {
             ntdef::NULL},
         um::winuser::{WM_KEYDOWN, HC_ACTION, WM_INPUT, WM_SYSKEYDOWN, WM_KEYUP, WM_SYSKEYUP}};
 
-    use crate::hook::event::{InputEvent, KeyPress, KeyboardEvent};
+    use crate::event::{InputEvent, KeyPress, KeyboardEvent};
 
     use super::{keyboard_procedure, CALL_NEXT_HOOK_CALLS, CALL_NEXT_HOOK_RETURN};
     use super::GLOBAL_CHANNEL;

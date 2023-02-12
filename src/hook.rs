@@ -1,9 +1,7 @@
 pub(super) mod inner;
-pub mod event;
 
 use crate::hook::inner::InnerHook;
-
-use self::event::InputEvent;
+use crate::event::InputEvent;
 
 /// Handle to a low-level Windows hook for keyboard and/or mouse events, regardless of application focus.
 /// For more details see the [HookBuilder]. When the handle goes out of scope, then the low-level hook is removed.
@@ -44,7 +42,7 @@ impl Hook {
     /// 
     /// ``` rust
     /// # fn main() {
-    /// # use willhook::hook::event::*;
+    /// # use willhook::event::*;
     /// # let hook = willhook::mouse_hook().unwrap();
     /// use std::sync::mpsc::channel;
     /// use std::time::Instant;

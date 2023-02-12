@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-use crate::hook::event::*;
+use crate::event::*;
 
 pub struct HookChannels {
     keyboard_sender: Mutex<Sender<InputEvent>>,

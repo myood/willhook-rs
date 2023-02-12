@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod willhook {
     use willhook::*;
-    use willhook::hook::event::*;
-    use willhook::hook::event::MouseButtonPress::*;
-    use willhook::hook::event::MouseButton::*;
-    use willhook::hook::event::MouseClick::*;
-    use willhook::hook::event::KeyboardKey::*;
+    use willhook::event::*;
+    use willhook::event::MouseButtonPress::*;
+    use willhook::event::MouseButton::*;
+    use willhook::event::MouseClick::*;
+    use willhook::event::KeyboardKey::*;
     use mki::Keyboard;
     use mki::Mouse;
 
