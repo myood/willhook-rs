@@ -20,31 +20,37 @@ pub enum IsEventInjected {
     NotInjected,
 }
 
+/// Keyboard event with data if key was pressed down or up, what key was pressed, and if event was injected. 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct KeyboardEvent {
+    /// Indicates if this is a press or release
     pub pressed: KeyPress,
+    /// Code of the key that triggered an event
     pub key: Option<KeyboardKey>,
+    /// If the event was injected by the software
     pub is_injected: Option<IsEventInjected>,
 }
 
 /// Enum to distinguish system key press from normal key press.
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum IsSystemKeyPress {
-    /// System key is basically any key pressed while ALT is also pressed.
+    /// System key is basically any key pressed while ALT is also pressed
     System,
-    /// Indicates that key input event occured while ALT key was NOT pressed.
+    /// Indicates that key input event occured while ALT key was NOT pressed
     Normal,
 }
 
 /// Indicates whether the [KeyboardKey] was pressed [KeyPress::Down] or [KeyPress::Up].
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum KeyPress {
+    /// Pressed down
     Down(IsSystemKeyPress),
+    /// Released
     Up(IsSystemKeyPress),
     Other(usize),
 }
 
-/// Indicates what key on the keyboard was pressed.
+/// Indicates key on the keyboard.
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum KeyboardKey {
     A,
@@ -211,26 +217,36 @@ const VK_X: i32 = 0x58;
 const VK_Y: i32 = 0x59;
 const VK_Z: i32 = 0x5A;
 
+/// Main mouse event that can be one of [MouseEventType] and also stores if event was injected.
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct MouseEvent {
+    /// The enum also stores the particular event data, like position or button
     pub event: MouseEventType,
+    /// Indicates if event was injected by software
     pub is_injected: Option<IsEventInjected>,
 }
 
+/// The type of the mouse event with it's specific data
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum MouseEventType {
+    /// Button on the mouse was pressed
     Press(MousePressEvent),
+    /// Mouse was moved
     Move(MouseMoveEvent),
+    /// Wheel on the mouse was, well, spinning.
     Wheel(MouseWheelEvent),
+    /// Received unrecognized mouse event type, the code is stored for reference.
     Other(usize)
 }
 
+/// Holds information which button was pressed or released
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct MousePressEvent {
     pub pressed: MouseButtonPress,
     pub button: MouseButton,
 }
 
+/// Holds information which mouse wheel triggered the event
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum MouseWheel {
     Horizontal,
@@ -238,12 +254,15 @@ pub enum MouseWheel {
     Unknown(usize),
 }
 
+/// Indicates the direction of the mouse wheel spin
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum MouseWheelDirection {
     Forward,
     Backward,
     Unknown(u32),
 }
+
+/// The mouse wheel event with information which wheel triggered an event and the direction of the spin
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct MouseWheelEvent {
     pub wheel: MouseWheel,
@@ -251,17 +270,20 @@ pub struct MouseWheelEvent {
 
 }
 
+/// Point in per-monitor aware coordinates, see [MSDN](https://learn.microsoft.com/en-us/windows/desktop/api/shellscalingapi/ne-shellscalingapi-process_dpi_awareness)
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
 }
 
+/// Holds the new cursor position after mouse move
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct MouseMoveEvent {
     pub point: Option<Point>,
 }
 
+/// Indicates if button was pressed or released
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum MouseButtonPress {
     Down,
@@ -269,6 +291,7 @@ pub enum MouseButtonPress {
     Other(usize),
 }
 
+/// Indicates if mouse button press is single or double click
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum MouseClick {
     SingleClick,
@@ -276,6 +299,7 @@ pub enum MouseClick {
     Other(u32),
 }
 
+/// Identifies which mouse button triggered an event
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub enum MouseButton {
     Left(MouseClick),
