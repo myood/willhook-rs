@@ -1,5 +1,3 @@
-#![cfg(windows)]
-
 use willhook::willhook;
 use std::sync::{Arc, atomic::{Ordering, AtomicBool}};
 

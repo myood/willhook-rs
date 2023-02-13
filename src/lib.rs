@@ -1,5 +1,3 @@
-//! # Consider this crate as work-in-progress.
-//!
 //! # What this crate provides
 //! 
 //! This Windows-only crate provides safe and correct means to listen for keyboard and mouse events regardless of application focus.
@@ -23,17 +21,26 @@
 //! 
 //! # Warning: The current state
 //! 
-//! Currently it supports mouse and keyboard actions to some extent, see [event] module for details.
-//! There are sparse tests, which will grow over time, but keep in mind that the crate is "young".
-//! Note: the tests should be run with `cargo test --tests -- --test-threads=1 --include-ignored` - you can try to figure out why. :-)
+//! Currently it supports listening to mouse and keyboard actions, see [event] module for details.
+//! There is no fancy logic to interpret the events - with this crate you can just received them and do what you want with that information.
+//! In that aspect, I consider it feature complete.
+//! There are integration tests that should cover all realistic scenarios.
+//! There are also some unit tests covering less realistic cases, when Windows OS would send invalid input.
+//! I think the crate is rather well tested, but still, keep in mind that the crate is also "young".
+//! Note: the integration tests inject mouse and keyboard events, also they need to be run sequentially (no multi-threading). 
+//! There are some tests that do not pass on GitHub Actions and are ignored.
+//! With that in mind, run the tests with `cargo test --tests -- --test-threads=1 --include-ignored`.
 //! *It is highly recommended to at least quickly review the code before using this crate for anything more then hobby projects, at least at the current state.*
 //! 
 //! TODO:
-//! - finish implementation of mouse move and mouse wheel
-//! - document unsafe code
-//! - write more tests
-//! - limit the "pub" between private modules (between "implementation", the public API is well defined I think)
-//! - maybe do some "target based" compilation, so that this crate can be included in linux projects also?
+//! - document unsafe code before I forget all the quirks :-)
+//! - maybe write more unit tests
+//! - maybe improve the crate partitioning to modules (without breaking the API)
+//! - maybe rework underlying channels, so that they are dropped with the hook (now they are just drained)
+//! - maybe add injecting events
+//! - maybe add blocking events, if even possible
+//! - maybe add manipulating events, if even possible
+//! - maybe add information about time of the event
 //! 
 //! # How it works
 //! 
