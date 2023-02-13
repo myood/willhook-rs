@@ -6,7 +6,7 @@ pub fn a_key(key: KeyboardKey, press: KeyPress) -> Result<InputEvent, std::sync:
     Ok(Keyboard(KeyboardEvent {
                     pressed: press,
                     key: Some(key),
-                    is_injected: Some(IsKeyboardEventInjected::Injected)}))
+                    is_injected: Some(IsEventInjected::Injected)}))
 }
 
 pub fn a_button(button: MouseButton, press: MouseButtonPress) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
@@ -15,7 +15,7 @@ pub fn a_button(button: MouseButton, press: MouseButtonPress) -> Result<InputEve
                         pressed: press,
                         button: button,
                     }),
-                    is_injected: Some(IsMouseEventInjected::Injected)}))
+                    is_injected: Some(IsEventInjected::Injected)}))
 }
 
 pub fn a_move(an_x: i32, an_y: i32) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
@@ -23,7 +23,7 @@ pub fn a_move(an_x: i32, an_y: i32) -> Result<InputEvent, std::sync::mpsc::TryRe
         event: Move(MouseMoveEvent{
             point: Some(Point{x: an_x, y: an_y}),
         }),
-        is_injected: Some(IsMouseEventInjected::Injected)}))
+        is_injected: Some(IsEventInjected::Injected)}))
 }
 
 pub fn is_mouse_move(r: Result<InputEvent, std::sync::mpsc::TryRecvError>) -> bool {
@@ -46,7 +46,7 @@ pub fn a_wheel(wheel: MouseWheel, wheel_direction: MouseWheelDirection) -> Resul
         event: Wheel(MouseWheelEvent {
                 wheel: wheel, direction: Some(wheel_direction),
             }),
-        is_injected: Some(IsMouseEventInjected::Injected) }))
+        is_injected: Some(IsEventInjected::Injected) }))
 }
 
 // The MKI implementation seems to be buggy at the current version.

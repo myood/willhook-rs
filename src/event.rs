@@ -11,20 +11,20 @@ pub enum InputEvent {
     Other(u32),
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
-pub struct KeyboardEvent {
-    pub pressed: KeyPress,
-    pub key: Option<KeyboardKey>,
-    pub is_injected: Option<IsKeyboardEventInjected>,
-}
-
 /// Indicates if the keyboard event was injected by the software, see this crate integration tests for example.
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
-pub enum IsKeyboardEventInjected {
+pub enum IsEventInjected {
     /// Event was injected by software
     Injected,
     /// Input comes from the user input (real hardware)
     NotInjected,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
+pub struct KeyboardEvent {
+    pub pressed: KeyPress,
+    pub key: Option<KeyboardKey>,
+    pub is_injected: Option<IsEventInjected>,
 }
 
 /// Enum to distinguish system key press from normal key press.
@@ -214,14 +214,7 @@ const VK_Z: i32 = 0x5A;
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
 pub struct MouseEvent {
     pub event: MouseEventType,
-    pub is_injected: Option<IsMouseEventInjected>,
-}
-
-
-#[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]
-pub enum IsMouseEventInjected {
-    Injected,
-    NotInjected,
+    pub is_injected: Option<IsEventInjected>,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Hash, Eq, PartialEq, Debug)]

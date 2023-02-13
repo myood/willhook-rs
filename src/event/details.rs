@@ -12,26 +12,42 @@ impl KeyboardEvent {
         KeyboardEvent{
             pressed: KeyPress::from(wm_key_code),
             key: KeyboardKey::optionally_from(kbd_hook_struct),
-            is_injected: IsKeyboardEventInjected::optionally_from(kbd_hook_struct),
+            is_injected: IsEventInjected::optionally_from_keyboard(kbd_hook_struct),
         }
     }
 }
 
-impl IsKeyboardEventInjected {
-    unsafe fn optionally_from(value: *const KBDLLHOOKSTRUCT) -> Option<Self> {
+impl IsEventInjected {
+    unsafe fn optionally_from_keyboard(value: *const KBDLLHOOKSTRUCT) -> Option<Self> {
         if value.is_null() {
             None
         } else {
-            Some(IsKeyboardEventInjected::from((*value).flags))
+            Some(IsEventInjected::from_keyboard_flags((*value).flags))
         }
     }
-}
+    
+    unsafe fn optionally_from_mouse(value: *const MSLLHOOKSTRUCT) -> Option<Self> {
+        if value.is_null() {
+            None
+        } else {
+            Some(IsEventInjected::from_mouse_flags((*value).flags))
+        }
+    }
+    
+    fn from_mouse_flags(value: DWORD) -> Self {
+        let i1 = 0 != value & LLMHF_INJECTED;
+        let i2 = 0 != value & LLMHF_LOWER_IL_INJECTED;
+        use IsEventInjected::*;
+        match i1 || i2 {
+            true => Injected,
+            false => NotInjected,
+        }
+    }
 
-impl From<DWORD> for IsKeyboardEventInjected {
-    fn from(value: DWORD) -> Self {
+    fn from_keyboard_flags(value: DWORD) -> Self {
         let i1 = 0 != value & LLKHF_INJECTED;
         let i2 = 0 != value & LLKHF_LOWER_IL_INJECTED;
-        use IsKeyboardEventInjected::*;
+        use IsEventInjected::*;
         match i1 || i2 {
             true => Injected,
             false => NotInjected,
@@ -216,7 +232,7 @@ impl MouseEvent {
     pub unsafe fn new(wm_mouse_param: WPARAM, ms_ll_hook_struct: *const MSLLHOOKSTRUCT) -> Self {
         use MouseEventType::*;
         MouseEvent{
-            is_injected: IsMouseEventInjected::optionally_from(ms_ll_hook_struct),
+            is_injected: IsEventInjected::optionally_from_mouse(ms_ll_hook_struct),
             event: match wm_mouse_param as u32 {
                 // Mouse press
                 WM_LBUTTONDOWN | WM_LBUTTONUP | WM_LBUTTONDBLCLK => Press(MousePressEvent::new(wm_mouse_param, ms_ll_hook_struct)),
@@ -248,28 +264,6 @@ impl MousePressEvent {
 impl From<POINT> for Point {
     fn from(value: POINT) -> Self {
         Point { x: value.x, y: value.y }
-    }
-}
-
-impl IsMouseEventInjected {
-    unsafe fn optionally_from(value: *const MSLLHOOKSTRUCT) -> Option<Self> {
-        if value.is_null() {
-            None
-        } else {
-            Some(IsMouseEventInjected::from((*value).flags))
-        }
-    }
-}
-
-impl From<DWORD> for IsMouseEventInjected {
-    fn from(value: DWORD) -> Self {
-        let i1 = 0 != value & LLMHF_INJECTED;
-        let i2 = 0 != value & LLMHF_LOWER_IL_INJECTED;
-        use IsMouseEventInjected::*;
-        match i1 || i2 {
-            true => Injected,
-            false => NotInjected,
-        }
     }
 }
 
