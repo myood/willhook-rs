@@ -27,6 +27,10 @@ impl HookChannels {
         self.mouse_sender.lock().unwrap().send(InputEvent::Mouse(me))
     }
 
+    pub fn recv(&self) -> Result<InputEvent, std::sync::mpsc::RecvError> {
+        self.receiver.lock().unwrap().recv()
+    }
+
     pub fn try_recv(&self) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         self.receiver.lock().unwrap().try_recv()
     }

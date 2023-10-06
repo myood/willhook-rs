@@ -167,6 +167,10 @@ impl InnerHook {
         }
     }
 
+    pub fn recv() -> Result<InputEvent, std::sync::mpsc::RecvError> {
+        GLOBAL_CHANNEL.recv()
+    }
+
     pub fn try_recv() -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         GLOBAL_CHANNEL.try_recv()
     }

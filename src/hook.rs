@@ -62,6 +62,34 @@ impl Hook {
     pub fn try_recv(&self) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         InnerHook::try_recv()
     }
+
+    /// Hook::recv() should be an option besides Hook::try_recv() when you want park the current thread until there is an event to process.
+    /// For example if one would be interested in only unique key presses
+    /// with timestamps (regardless of how long the key press lasts):
+    ///
+    /// ``` rust
+    /// # fn main() {
+    /// # use willhook::event::*;
+    /// # let hook = willhook::mouse_hook().unwrap();
+    /// use std::sync::mpsc::channel;
+    /// use std::time::Instant;
+    /// let (event_sender, _event_receiver) = channel();
+    /// while let Ok(event) = hook.recv() {  //will block and wait here until there is an event to process
+    ///     // Process only "press ups" to find unique key presses,
+    ///     // because if a user holds a key, then Windows can emit multiple "key down" events
+    ///     if let InputEvent::Keyboard(event) = event {
+    ///         match event.pressed {
+    ///             KeyPress::Up(is_system) => { event_sender.send( (event, Instant::now() )); },
+    ///             _ => continue,
+    ///         }
+    ///     }
+    /// }
+    /// # }
+    /// ```
+    pub fn recv(&self) -> Result<InputEvent, std::sync::mpsc::RecvError> {
+        InnerHook::recv()
+    }
+
 }
 
 impl Drop for Hook {
