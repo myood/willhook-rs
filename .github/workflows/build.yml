@@ -1,10 +1,8 @@
 name: Build & Tests
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "*" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,5 +18,7 @@ jobs:
       run: cargo doc --release
     - name: UT
       run: cargo test --release --lib -- --test-threads=1
-    - name: validation
+    - name: Validation
       run: cargo test --release --test '*' -- --test-threads=1
+    - name: "Validation [Serde]"
+      run: cargo test --features serde --release --test '*' -- --test-threads=1
