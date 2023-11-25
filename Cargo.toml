@@ -20,6 +20,7 @@ winapi = { version = "0.3", features = ["winuser", "hidusage", "errhandlingapi",
 
 [dependencies]
 once_cell = "1.17.0"
+serde = { version = "1.0.183", features = ["derive"], optional = true }
 
 [dev-dependencies]
 ctrlc = "3.2.0"
@@ -29,3 +30,6 @@ utils = { path = "utils" }
 
 [[example]]
 name = "showcase"
+
+[features]
+serde_support = ["dep:serde"]
