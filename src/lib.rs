@@ -68,8 +68,6 @@ pub mod event;
 pub use hook::Hook;
 pub use hook::HookBuilder;
 pub use event::*;
-#[cfg(feature = "serde_support")]
-pub use serde;
 
 /// Return the Keyboard Hook handle. For more details see [Hook] and [HookBuilder]
 pub fn keyboard_hook() -> Option<Hook> {

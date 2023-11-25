@@ -32,4 +32,4 @@ utils = { path = "utils" }
 name = "showcase"
 
 [features]
-serde_support = ["dep:serde"]
+serde = ["dep:serde"]
