@@ -2,9 +2,9 @@ name: Build & Tests
 
 on:
   push:
-    branches: [ "serde_support" ]
+    branches: [ "*" ]
   pull_request:
-    branches: [ "serde_support" ]
+    branches: [ "*" ]
 
 env:
   CARGO_TERM_COLOR: always
