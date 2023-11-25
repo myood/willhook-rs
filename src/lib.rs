@@ -61,6 +61,13 @@
 //! Then one can receive recorded [event::InputEvent]s via [hook::Hook::try_recv].
 //! It works similiarly to [std::sync::mpsc::Receiver::try_recv].
 //! 
+//! # Optional features
+//! 
+//! ## Serde support
+//! 
+//! To enable [serde](https://crates.io/crates/serde) support, add willhook with "serde" feature to your cargo.toml:
+//! 
+//! `willhook = { version = "^0.6.2", features = ["serde"]}`
 
 pub mod hook;
 pub mod event;
