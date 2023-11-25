@@ -2,7 +2,7 @@
 name = "willhook"
 description = "Capture all keyboard and mouse input regardless of application focus on the active windows desktop"
 license = "MIT"
-version = "0.6.1"
+version = "0.6.2"
 edition = "2021"
 categories = ["api-bindings", "external-ffi-bindings", "os::windows-apis"]
 keywords = ["winapi", "user-input", "keyboard", "mouse", "hooks"]
@@ -26,6 +26,7 @@ serde = { version = "1.0.183", features = ["derive"], optional = true }
 ctrlc = "3.2.0"
 quickcheck = "1.0.3"
 mki = "0.2.3"
+serde_json = "1.0"
 utils = { path = "utils" }
 
 [[example]]
