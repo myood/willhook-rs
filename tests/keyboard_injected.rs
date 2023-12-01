@@ -15,13 +15,6 @@ mod keyboard_hook_tests {
     use mki::Keyboard;
 
     #[test]
-    fn press_one_keyboard_key_blocking() {
-        let h = keyboard_hook().unwrap();
-        Keyboard::A.press();
-        assert_eq!(h.recv(), utils::a_key_blocking(A, Down(Normal)));
-    }
-
-    #[test]
     fn press_one_keyboard_key() {
         Keyboard::A.press();
 

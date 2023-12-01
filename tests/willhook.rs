@@ -10,7 +10,7 @@ mod willhook {
     use mki::Mouse;
 
     #[test]
-    pub fn mixed_mouse_inputs() {            
+    pub fn mixed_inputs() {            
         let h = willhook().unwrap();
 
         utils::fixme::vertical_wheel_backward();
@@ -34,5 +34,24 @@ mod willhook {
         assert_eq!(h.try_recv(), utils::a_button(Middle(SingleClick), Down));
         assert_eq!(h.try_recv(), utils::a_button(Middle(SingleClick), Up));
         assert!(h.try_recv().is_err());
+    }
+    
+    pub fn blocking_mixed_inputs() {            
+        let h = willhook().unwrap();
+
+        Keyboard::A.click();
+        utils::fixme::vertical_wheel_backward();
+        utils::fixme::horizontal_wheel_forward();
+        Keyboard::B.click();
+        utils::fixme::click(Mouse::Middle);
+
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_key(A, KeyPress::Down(Normal))));
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_key(A, KeyPress::Up(Normal))));
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_wheel(MouseWheel::Vertical, MouseWheelDirection::Backward)));
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_wheel(MouseWheel::Horizontal, MouseWheelDirection::Forward)));
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_key(B, KeyPress::Down(Normal))));
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_key(B, KeyPress::Up(Normal))));
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_button(Middle(SingleClick), Down)));
+        assert_eq!(h.recv(), utils::as_blocking(utils::a_button(Middle(SingleClick), Up)));
     }
 }

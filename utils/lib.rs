@@ -3,8 +3,8 @@ use willhook::event::InputEvent::*;
 use willhook::event::MouseEventType::*;
 
 
-pub fn a_key_blocking(key: KeyboardKey, press: KeyPress) -> Result<InputEvent, std::sync::mpsc::RecvError> {
-    a_key(key, press).map_err(|e| match e {
+pub fn as_blocking(ie: Result<InputEvent, std::sync::mpsc::TryRecvError>) -> Result<InputEvent, std::sync::mpsc::RecvError> {
+    ie.map_err(|e| match e {
         std::sync::mpsc::TryRecvError::Empty | std::sync::mpsc::TryRecvError::Disconnected =>
             std::sync::mpsc::RecvError,
     })
