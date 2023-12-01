@@ -62,6 +62,13 @@ impl Hook {
     pub fn try_recv(&self) -> Result<InputEvent, std::sync::mpsc::TryRecvError> {
         InnerHook::try_recv()
     }
+
+    /// This is blocking alternative to Hook::try_recv(). 
+    /// It will block the current thread until there is an event from the low-level hook(s) running in the background thread(s), and then will return the event.
+    pub fn recv(&self) -> Result<InputEvent, std::sync::mpsc::RecvError> {
+        InnerHook::recv()
+    }
+
 }
 
 impl Drop for Hook {
