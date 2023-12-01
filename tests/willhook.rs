@@ -36,6 +36,7 @@ mod willhook {
         assert!(h.try_recv().is_err());
     }
     
+    #[test]
     pub fn blocking_mixed_inputs() {            
         let h = willhook().unwrap();
 
