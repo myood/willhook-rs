@@ -2,7 +2,6 @@
 
 ![Build](https://github.com/myood/willhook-rs/actions/workflows/build.yml/badge.svg) ![Docs.rs](https://img.shields.io/docsrs/willhook/latest?label=Docs.rs&logo=Docs.rs) ![issues](https://img.shields.io/github/issues/myood/willhook-rs)
 
-
 Capture all keyboard and mouse input regardless of focus on the active windows desktop
 
 # What this crate provides
